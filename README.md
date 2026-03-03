@@ -7,22 +7,28 @@ A comprehensive backend service for managing aircraft scheduling, flight logs, a
 ```
 flying-club-api/
 ├── src/                          # Application source code
-│   ├── app.js                   # Express app setup and main endpoint definitions
+│   ├── app.js                   # Express app setup and route mounting (50 lines)
 │   ├── index.js                 # Application entry point
 │   ├── config/
 │   │   └── database.js          # PostgreSQL connection pool configuration
-│   ├── controllers/
+│   ├── controllers/             # Business logic controllers
 │   │   ├── aircraftController.js
 │   │   ├── authController.js
+│   │   ├── billingController.js
+│   │   ├── flightLogsController.js
 │   │   ├── memberController.js
-│   │   └── reservationsController.js
+│   │   ├── reservationsController.js
+│   │   └── utilityController.js
 │   ├── middleware/
 │   │   └── auth.js              # JWT authentication middleware
-│   ├── routes/
+│   ├── routes/                  # Route definitions and endpoint mounting
 │   │   ├── aircraftRoutes.js
+│   │   ├── billingRoutes.js
+│   │   ├── flightLogsRoutes.js
 │   │   ├── memberRoutes.js
 │   │   ├── reservationsRoutes.js
-│   │   └── userRoutes.js
+│   │   ├── userRoutes.js
+│   │   └── utilityRoutes.js
 │   └── utils/                   # Utility functions (for future use)
 ├── db/
 │   ├── schema.sql               # Complete database schema
@@ -53,6 +59,28 @@ flying-club-api/
 - **Availability Checking**: Query aircraft availability for specific time ranges
 - **JWT Authentication**: Secure endpoints with token-based authentication
 - **Comprehensive Testing**: 60 tests across 8 test suites with 100% endpoint coverage
+- **Clean Architecture**: Modular design with separation of concerns
+
+## Architecture
+
+The project follows a clean, modular architecture with proper separation of concerns:
+
+### Controller-Route Pattern
+- **Controllers** contain business logic and database operations
+- **Routes** define endpoint paths and mount controller functions
+- **Middleware** handles authentication, error handling, and validation
+
+### File Organization
+- `app.js` (50 lines) - Minimal Express setup and route mounting only
+- 7 controller files - Each handling specific business domain logic
+- 7 route files - Clean endpoint definitions with asyncHandler wrapper
+- Centralized error handling and database configuration
+
+### Benefits
+- **Maintainable**: Each endpoint type has its own controller/route files
+- **Testable**: Clean separation allows for easier unit testing
+- **Scalable**: Easy to add new endpoints following the established pattern
+- **Readable**: Clear file organization and minimal app.js
 
 ## Database Schema
 
