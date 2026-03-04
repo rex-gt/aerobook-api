@@ -58,6 +58,9 @@ flying-club-api/
 - **Automated Billing**: Generate billing records based on tach hours and hourly rates
 - **Availability Checking**: Query aircraft availability for specific time ranges
 - **JWT Authentication**: Secure endpoints with token-based authentication
+- **Role-Based Access Control (RBAC)**: Three user roles (Admin, Operator, Member) with enforced permissions
+- **HTTPS Support**: Optional SSL/TLS encryption with configurable certificates
+- **Protected Endpoints**: All API endpoints require authentication and role authorization
 - **Comprehensive Testing**: 60 tests across 8 test suites with 100% endpoint coverage
 - **Clean Architecture**: Modular design with separation of concerns
 
@@ -126,6 +129,7 @@ psql -d flying_club -f db/sample-data.sql
 ```bash
 cp .env.example .env
 # Edit .env with your database credentials and JWT_SECRET
+# Optional: Add SSL_KEY_PATH and SSL_CERT_PATH for HTTPS support
 ```
 
 6. Start the server:
@@ -135,7 +139,7 @@ npm start
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000`
+The API will be available at `http://localhost:3000` or `https://localhost:3000` if SSL is configured
 
 ## Testing
 
@@ -541,22 +545,39 @@ curl http://localhost:3000/api/billing/summary/1
 # Returns total hours flown, amount owed, amount paid, etc.
 ```
 
-## Authentication
+## Authentication & Authorization
 
-This API uses JWT authentication for protected endpoints.
+This API uses JWT authentication for all endpoints. All requests require a valid Bearer token.
 
-Environment variables (minimum):
+### User Roles
 
-- `JWT_SECRET` — secret used to sign tokens
-- `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT` — Postgres connection
+The system enforces three user roles with specific permissions:
 
-Auth endpoints:
+| Role | Permissions |
+|------|------------|
+| **admin** | Full access to all endpoints (create, read, update, delete on all resources) |
+| **operator** | Read access to members and most resources; limited write permissions |
+| **member** | Personal access to own flight logs and reservations only |
+
+### Environment Variables
+
+Required environment variables (minimum):
+
+- `JWT_SECRET` — secret used to sign JWT tokens
+- `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT` — PostgreSQL connection
+
+Optional environment variables:
+
+- `SSL_KEY_PATH` — path to SSL private key file for HTTPS support
+- `SSL_CERT_PATH` — path to SSL certificate file for HTTPS support
+
+### Auth Endpoints
 
 - `POST /api/users/register` — register a new member. Required fields: `first_name`, `last_name`, `email`, `password`.
 - `POST /api/users/login` — returns `{ token }` when successful.
 - `GET /api/users/profile` — protected route; include header `Authorization: Bearer <token>`.
 
-Quick curl example:
+### Authentication Examples
 
 ```bash
 # Register
@@ -574,6 +595,20 @@ curl -H "Authorization: Bearer <token>" http://localhost:3000/api/users/profile
 ```
 
 You can also run the provided script `test/auth-curl-example.sh` for testing auth endpoints.
+
+### Protected Endpoints
+
+**Note**: All API endpoints require authentication. Requests must include the following header:
+
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+Some endpoints additionally require specific user roles. For example:
+
+- **GET /api/members** — Requires 'admin' or 'operator' role
+- **POST /api/members** — Requires 'admin' role
+- **DELETE /api/members/:id** — Requires 'admin' role
 
 
 ## Data Models
@@ -678,6 +713,45 @@ Error responses include a JSON body:
   "message": "Additional details"
 }
 ```
+
+## Security
+
+### HTTPS Support
+
+The API supports optional HTTPS/TLS encryption. To enable HTTPS:
+
+1. Generate SSL certificates:
+```bash
+# Using OpenSSL (for development only)
+openssl req -new -newkey rsa:2048 -nodes \
+  -keyout server.key -out server.csr
+openssl x509 -req -days 365 -in server.csr \
+  -signkey server.key -out server.crt
+```
+
+2. Add environment variables to `.env`:
+```
+SSL_KEY_PATH=/path/to/server.key
+SSL_CERT_PATH=/path/to/server.crt
+```
+
+3. Start the server. It will automatically use HTTPS when SSL paths are configured:
+```bash
+npm start
+# Output: Tower, we are clear for takeoff on HTTPS port 3000
+```
+
+Without SSL configuration, the server runs on HTTP:
+```
+npm start
+# Output: Tower, we are clear for takeoff on port 3000
+```
+
+### Password Security
+
+- Passwords are hashed using bcryptjs before storage
+- Users must provide valid credentials to obtain JWT tokens
+- All protected endpoints require valid JWT tokens
 
 ## Features & Business Logic
 
