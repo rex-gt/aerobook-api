@@ -36,12 +36,13 @@ flying-club-api/
 ├── test/                        # Comprehensive test suite
 │   ├── aircraft.test.js         # Aircraft endpoint tests (6 tests)
 │   ├── app.test.js              # API smoke tests (4 tests)
-│   ├── auth.test.js             # Authentication tests (4 tests)
-│   ├── auth-curl-example.sh     # Example curl commands for auth
+│   ├── auth.test.js             # Authentication tests (16 tests)
 │   ├── billing.test.js          # Billing endpoint tests (15 tests)
 │   ├── flightlogs.test.js       # Flight logs tests (8 tests)
 │   ├── members.test.js          # Members endpoint tests (5 tests)
 │   ├── reservations.test.js     # Reservations endpoint tests (6 tests)
+│   ├── roles.test.js            # Role-based access control tests (21 tests)
+│   ├── smoke-test.sh            # Live server integration tests (29 tests)
 │   └── utility.test.js          # Utility endpoint tests (12 tests)
 ├── index.js                     # Application entry point
 ├── package.json                 # Dependencies and scripts
@@ -61,7 +62,7 @@ flying-club-api/
 - **Role-Based Access Control (RBAC)**: Three user roles (Admin, Operator, Member) with enforced permissions
 - **HTTPS Support**: Optional SSL/TLS encryption with configurable certificates
 - **Protected Endpoints**: All API endpoints require authentication and role authorization
-- **Comprehensive Testing**: 60 tests across 8 test suites with 100% endpoint coverage
+- **Comprehensive Testing**: 93 unit tests across 9 test suites plus 29 live server integration tests
 - **Clean Architecture**: Modular design with separation of concerns
 
 ## Architecture
@@ -145,19 +146,20 @@ The API will be available at `http://localhost:3000` or `https://localhost:3000`
 
 ### Test Coverage
 
-The project includes comprehensive test coverage with **60 tests** across **8 test suites**, covering **100% of all endpoints**:
+The project includes comprehensive test coverage with **93 unit tests** across **9 test suites**, covering **100% of all endpoints**:
 
 | Test Suite | Tests | Coverage |
 |-----------|-------|----------|
 | aircraft.test.js | 6 | Aircraft CRUD, Availability |
 | app.test.js | 4 | API Smoke Tests |
-| auth.test.js | 4 | Registration, Login, Profile |
+| auth.test.js | 16 | Registration, Login, Profile, Validation, Errors |
 | billing.test.js | 15 | Billing CRUD, Generation, Summary |
 | flightlogs.test.js | 8 | Flight Logs CRUD, Filtering |
 | members.test.js | 5 | Members CRUD |
 | reservations.test.js | 6 | Reservations CRUD, Conflict Detection |
+| roles.test.js | 21 | Role-Based Access Control (admin/operator/member) |
 | utility.test.js | 12 | Aircraft Availability Utility |
-| **TOTAL** | **60** | **31 Endpoints** |
+| **TOTAL** | **93** | **31 Endpoints** |
 
 ### Running Tests
 
@@ -192,6 +194,7 @@ $ npm test
 
 PASS test/billing.test.js
 PASS test/auth.test.js
+PASS test/roles.test.js
 PASS test/utility.test.js
 PASS test/reservations.test.js
 PASS test/flightlogs.test.js
@@ -199,11 +202,27 @@ PASS test/aircraft.test.js
 PASS test/members.test.js
 PASS test/app.test.js
 
-Test Suites: 8 passed, 8 total
-Tests:       60 passed, 60 total
+Test Suites: 9 passed, 9 total
+Tests:       93 passed, 93 total
 Snapshots:   0 total
 Time:        0.689 s
 ```
+
+### Live Server Integration Tests
+
+`test/smoke-test.sh` runs 29 end-to-end tests against a live running server, covering all endpoints:
+
+```bash
+# Against local server (default: https://localhost:3000)
+bash test/smoke-test.sh
+
+# Against a specific host
+bash test/smoke-test.sh https://other-host:3000
+```
+
+The script registers a temporary admin user, exercises every endpoint (auth, members, aircraft, reservations, flight logs, billing), and cleans up all created records afterward.
+
+> **Note**: Uses `curl -sk` to skip SSL certificate verification for self-signed certs. The server must be running before executing the script.
 
 ## API Endpoints
 
@@ -594,7 +613,10 @@ curl -X POST http://localhost:3000/api/users/login \
 curl -H "Authorization: Bearer <token>" http://localhost:3000/api/users/profile
 ```
 
-You can also run the provided script `test/auth-curl-example.sh` for testing auth endpoints.
+You can also run the smoke test script for full end-to-end testing against a live server:
+```bash
+bash test/smoke-test.sh
+```
 
 ### Protected Endpoints
 
@@ -772,7 +794,6 @@ The system prevents creating duplicate billing records for the same flight log.
 
 ## Future Enhancements
 
-- Advanced role-based authorization (RBAC) for different user types
 - Email notifications for reservations, cancellations, and billing
 - Maintenance tracking for aircraft with preventive maintenance scheduling
 - Flight instructor scheduling and student progress tracking
