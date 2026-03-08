@@ -5,12 +5,12 @@ A comprehensive backend service for WingTime Flight Management System, supportin
 ## Project Structure
 
 ```
-flying-club-api/
+wingtime-api/
 ├── src/                          # Application source code
-│   ├── app.js                   # Express app setup and route mounting (50 lines)
-│   ├── index.js                 # Application entry point
+│   ├── app.js                   # Express app setup, CORS config, and route mounting
+│   ├── index.js                 # App module re-export (used by root index.js)
 │   ├── config/
-│   │   └── database.js          # PostgreSQL connection pool configuration
+│   │   └── database.js          # PostgreSQL connection pool (supports DATABASE_URL and individual params)
 │   ├── controllers/             # Business logic controllers
 │   │   ├── aircraftController.js
 │   │   ├── authController.js
@@ -20,8 +20,8 @@ flying-club-api/
 │   │   ├── reservationsController.js
 │   │   └── utilityController.js
 │   ├── middleware/
-│   │   └── auth.js              # JWT authentication middleware
-│   ├── routes/                  # Route definitions and endpoint mounting
+│   │   └── auth.js              # JWT authentication and role authorization middleware
+│   ├── routes/                  # Route definitions with RBAC enforcement
 │   │   ├── aircraftRoutes.js
 │   │   ├── billingRoutes.js
 │   │   ├── flightLogsRoutes.js
@@ -31,20 +31,20 @@ flying-club-api/
 │   │   └── utilityRoutes.js
 │   └── utils/                   # Utility functions (for future use)
 ├── db/
-│   ├── schema.sql               # Complete database schema
+│   ├── schema.sql               # Complete database schema with indexes and triggers
 │   └── sample-data.sql          # Sample data for testing
 ├── test/                        # Comprehensive test suite
 │   ├── aircraft.test.js         # Aircraft endpoint tests (6 tests)
-│   ├── app.test.js              # API smoke tests (4 tests)
+│   ├── app.test.js              # API smoke tests (2 tests)
 │   ├── auth.test.js             # Authentication tests (16 tests)
 │   ├── billing.test.js          # Billing endpoint tests (15 tests)
 │   ├── flightlogs.test.js       # Flight logs tests (8 tests)
 │   ├── members.test.js          # Members endpoint tests (5 tests)
-│   ├── reservations.test.js     # Reservations endpoint tests (6 tests)
+│   ├── reservations.test.js     # Reservations endpoint tests (8 tests)
 │   ├── roles.test.js            # Role-based access control tests (21 tests)
 │   ├── smoke-test.sh            # Live server integration tests (29 tests)
 │   └── utility.test.js          # Utility endpoint tests (12 tests)
-├── index.js                     # Application entry point
+├── index.js                     # Application entry point (HTTP/HTTPS server)
 ├── package.json                 # Dependencies and scripts
 ├── .env.example                 # Environment variables template
 └── README.md                    # This file
@@ -71,30 +71,40 @@ The project follows a clean, modular architecture with proper separation of conc
 
 ### Controller-Route Pattern
 - **Controllers** contain business logic and database operations
-- **Routes** define endpoint paths and mount controller functions
-- **Middleware** handles authentication, error handling, and validation
+- **Routes** define endpoint paths, mount controller functions, and enforce RBAC via `protect` and `authorize` middleware
+- **Middleware** handles JWT authentication (`protect`) and role-based authorization (`authorize`)
+
+### CORS Configuration
+`app.js` supports configurable allowed origins via the `ALLOWED_ORIGINS` environment variable. It supports exact matches and wildcard patterns (e.g., `*.vercel.app`). Defaults to `http://localhost:5173`, `http://localhost:4200`, and `https://wingtime.vercel.app`.
 
 ### File Organization
-- `app.js` (50 lines) - Minimal Express setup and route mounting only
-- 7 controller files - Each handling specific business domain logic
-- 7 route files - Clean endpoint definitions with asyncHandler wrapper
+- `index.js` - HTTP/HTTPS server entry point; reads SSL certs if configured
+- `app.js` - Express app setup: CORS, middleware, and route mounting
+- 7 controller files - Each handling a specific business domain
+- 7 route files - Endpoint definitions with `asyncHandler` wrapper and role guards
 - Centralized error handling and database configuration
 
 ### Benefits
-- **Maintainable**: Each endpoint type has its own controller/route files
+- **Maintainable**: Each domain has its own controller/route files
 - **Testable**: Clean separation allows for easier unit testing
 - **Scalable**: Easy to add new endpoints following the established pattern
-- **Readable**: Clear file organization and minimal app.js
+- **Secure**: Every endpoint requires JWT authentication; routes enforce role requirements
 
 ## Database Schema
 
 ### Tables
 
-1. **members** - Club member information and authentication
-2. **aircraft** - Fleet aircraft details and current tach hours
-3. **reservations** - Scheduled aircraft bookings with conflict detection
-4. **flight_logs** - Actual flight records with tach hours
-5. **billing_records** - Generated billing based on usage
+1. **members** - Club member information, authentication, and roles (`admin` | `operator` | `member`)
+2. **aircraft** - Fleet aircraft details, tach hours, and availability
+3. **reservations** - Scheduled bookings with conflict detection; statuses: `scheduled`, `in_progress`, `completed`, `cancelled`
+4. **flight_logs** - Actual flight records; `tach_hours` is a computed column (`tach_end - tach_start`)
+5. **billing_records** - Generated billing per flight log based on tach hours × hourly rate
+
+### Indexes
+Optimized query indexes on foreign keys, time ranges, reservation status, and billing payment status.
+
+### Triggers
+All tables have an `update_updated_at_column` trigger that automatically updates `updated_at` on row changes.
 
 ## Setup Instructions
 
@@ -130,7 +140,29 @@ psql -d flying_club -f db/sample-data.sql
 ```bash
 cp .env.example .env
 # Edit .env with your database credentials and JWT_SECRET
-# Optional: Add SSL_KEY_PATH and SSL_CERT_PATH for HTTPS support
+```
+
+Required variables:
+```env
+# Database (local dev – use individual params OR provide DATABASE_URL for Railway/production)
+DB_USER=postgres
+DB_HOST=localhost
+DB_NAME=flying_club
+DB_PASSWORD=password
+DB_PORT=5432
+
+# Or for production (Railway):
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+
+# Auth
+JWT_SECRET=your_jwt_secret_here
+
+# CORS – comma-separated list; supports wildcard patterns like *.vercel.app
+# ALLOWED_ORIGINS=http://localhost:5173,https://wingtime.vercel.app
+
+# Optional SSL (omit to run plain HTTP)
+# SSL_KEY_PATH=/path/to/privkey.pem
+# SSL_CERT_PATH=/path/to/fullchain.pem
 ```
 
 6. Start the server:
@@ -140,7 +172,28 @@ npm start
 npm run dev
 ```
 
-The API will be available at `http://localhost:3000` or `https://localhost:3000` if SSL is configured
+The API will be available at `http://localhost:3000` (or `https://localhost:3000` if SSL is configured).
+
+## Role-Based Access Control (RBAC)
+
+All endpoints require a valid JWT (`Authorization: Bearer <token>`). Role requirements per endpoint:
+
+| Endpoint | Method | Required Role |
+|----------|--------|---------------|
+| `/api/users/register` | POST | Public |
+| `/api/users/login` | POST | Public |
+| `/api/users/profile` | GET / PUT | Any authenticated |
+| `/api/members` | GET | admin, operator |
+| `/api/members/:id` | GET | Any authenticated |
+| `/api/members` | POST | admin |
+| `/api/members/:id` | PUT | Any authenticated (own record) |
+| `/api/members/:id` | DELETE | admin |
+| `/api/aircraft` | GET / GET /:id / availability | Any authenticated |
+| `/api/aircraft` | POST / PUT | admin, operator |
+| `/api/aircraft/:id` | DELETE | admin |
+| `/api/reservations` | All | Any authenticated |
+| `/api/flight-logs` | All | Any authenticated |
+| `/api/billing` | All | Any authenticated |
 
 ## Testing
 
@@ -151,12 +204,12 @@ The project includes comprehensive test coverage with **93 unit tests** across *
 | Test Suite | Tests | Coverage |
 |-----------|-------|----------|
 | aircraft.test.js | 6 | Aircraft CRUD, Availability |
-| app.test.js | 4 | API Smoke Tests |
+| app.test.js | 2 | API Smoke Tests |
 | auth.test.js | 16 | Registration, Login, Profile, Validation, Errors |
 | billing.test.js | 15 | Billing CRUD, Generation, Summary |
 | flightlogs.test.js | 8 | Flight Logs CRUD, Filtering |
 | members.test.js | 5 | Members CRUD |
-| reservations.test.js | 6 | Reservations CRUD, Conflict Detection |
+| reservations.test.js | 8 | Reservations CRUD, Conflict Detection |
 | roles.test.js | 21 | Role-Based Access Control (admin/operator/member) |
 | utility.test.js | 12 | Aircraft Availability Utility |
 | **TOTAL** | **93** | **31 Endpoints** |
@@ -226,31 +279,83 @@ The script registers a temporary admin user, exercises every endpoint (auth, mem
 
 ## API Endpoints
 
+All protected endpoints require an `Authorization: Bearer <token>` header obtained from `/api/users/login`.
+
+### Authentication
+
+#### POST /api/users/register
+Register a new user
+```bash
+curl -X POST http://localhost:3000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com",
+    "password": "password123"
+  }'
+```
+
+#### POST /api/users/login
+Login and receive a JWT token
+```bash
+curl -X POST http://localhost:3000/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@example.com", "password": "password123"}'
+```
+
+#### GET /api/users/profile
+Get current user's profile
+```bash
+curl http://localhost:3000/api/users/profile \
+  -H "Authorization: Bearer <token>"
+```
+
+#### PUT /api/users/profile
+Update profile or change password
+```bash
+curl -X PUT http://localhost:3000/api/users/profile \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com",
+    "current_password": "oldpass",
+    "new_password": "newpass"
+  }'
+```
+
 ### Members
 
 #### GET /api/members
-Get all members
+Get all members (admin, operator only)
 ```bash
-curl http://localhost:3000/api/members
+curl http://localhost:3000/api/members \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### GET /api/members/:id
 Get specific member
 ```bash
-curl http://localhost:3000/api/members/1
+curl http://localhost:3000/api/members/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### POST /api/members
-Create new member
+Create new member (admin only)
 ```bash
 curl -X POST http://localhost:3000/api/members \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "member_number": "M001",
     "first_name": "John",
     "last_name": "Doe",
     "email": "john.doe@example.com",
-    "phone": "555-0100"
+    "phone": "555-0100",
+    "password": "password123",
+    "role": "member"
   }'
 ```
 
@@ -258,6 +363,7 @@ curl -X POST http://localhost:3000/api/members \
 Update member
 ```bash
 curl -X PUT http://localhost:3000/api/members/1 \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "first_name": "John",
@@ -269,9 +375,10 @@ curl -X PUT http://localhost:3000/api/members/1 \
 ```
 
 #### DELETE /api/members/:id
-Delete member
+Delete member (admin only)
 ```bash
-curl -X DELETE http://localhost:3000/api/members/1
+curl -X DELETE http://localhost:3000/api/members/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Aircraft
@@ -279,19 +386,22 @@ curl -X DELETE http://localhost:3000/api/members/1
 #### GET /api/aircraft
 Get all aircraft
 ```bash
-curl http://localhost:3000/api/aircraft
+curl http://localhost:3000/api/aircraft \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### GET /api/aircraft/:id
 Get specific aircraft
 ```bash
-curl http://localhost:3000/api/aircraft/1
+curl http://localhost:3000/api/aircraft/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### POST /api/aircraft
-Create new aircraft
+Create new aircraft (admin, operator only)
 ```bash
 curl -X POST http://localhost:3000/api/aircraft \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "tail_number": "N12345",
@@ -304,9 +414,10 @@ curl -X POST http://localhost:3000/api/aircraft \
 ```
 
 #### PUT /api/aircraft/:id
-Update aircraft
+Update aircraft (admin, operator only)
 ```bash
 curl -X PUT http://localhost:3000/api/aircraft/1 \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "make": "Cessna",
@@ -319,15 +430,17 @@ curl -X PUT http://localhost:3000/api/aircraft/1 \
 ```
 
 #### DELETE /api/aircraft/:id
-Delete aircraft
+Delete aircraft (admin only)
 ```bash
-curl -X DELETE http://localhost:3000/api/aircraft/1
+curl -X DELETE http://localhost:3000/api/aircraft/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### GET /api/aircraft/availability
 Check aircraft availability for a time range
 ```bash
-curl "http://localhost:3000/api/aircraft/availability?start_time=2024-03-15T09:00:00Z&end_time=2024-03-15T12:00:00Z"
+curl "http://localhost:3000/api/aircraft/availability?start_time=2024-03-15T09:00:00Z&end_time=2024-03-15T12:00:00Z" \
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Reservations
@@ -336,31 +449,38 @@ curl "http://localhost:3000/api/aircraft/availability?start_time=2024-03-15T09:0
 Get all reservations (with optional filters)
 ```bash
 # All reservations
-curl http://localhost:3000/api/reservations
+curl http://localhost:3000/api/reservations \
+  -H "Authorization: Bearer <token>"
 
 # Filter by member
-curl "http://localhost:3000/api/reservations?member_id=1"
+curl "http://localhost:3000/api/reservations?member_id=1" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by aircraft
-curl "http://localhost:3000/api/reservations?aircraft_id=2"
+curl "http://localhost:3000/api/reservations?aircraft_id=2" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by status
-curl "http://localhost:3000/api/reservations?status=scheduled"
+curl "http://localhost:3000/api/reservations?status=scheduled" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by date range
-curl "http://localhost:3000/api/reservations?start_date=2024-03-01&end_date=2024-03-31"
+curl "http://localhost:3000/api/reservations?start_date=2024-03-01&end_date=2024-03-31" \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### GET /api/reservations/:id
 Get specific reservation
 ```bash
-curl http://localhost:3000/api/reservations/1
+curl http://localhost:3000/api/reservations/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### POST /api/reservations
 Create new reservation (includes conflict detection)
 ```bash
 curl -X POST http://localhost:3000/api/reservations \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "member_id": 1,
@@ -375,6 +495,7 @@ curl -X POST http://localhost:3000/api/reservations \
 Update reservation
 ```bash
 curl -X PUT http://localhost:3000/api/reservations/1 \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "start_time": "2024-03-15T10:00:00Z",
@@ -387,7 +508,8 @@ curl -X PUT http://localhost:3000/api/reservations/1 \
 #### DELETE /api/reservations/:id
 Delete reservation
 ```bash
-curl -X DELETE http://localhost:3000/api/reservations/1
+curl -X DELETE http://localhost:3000/api/reservations/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Flight Logs
@@ -396,28 +518,34 @@ curl -X DELETE http://localhost:3000/api/reservations/1
 Get all flight logs (with optional filters)
 ```bash
 # All flight logs
-curl http://localhost:3000/api/flight-logs
+curl http://localhost:3000/api/flight-logs \
+  -H "Authorization: Bearer <token>"
 
 # Filter by member
-curl "http://localhost:3000/api/flight-logs?member_id=1"
+curl "http://localhost:3000/api/flight-logs?member_id=1" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by aircraft
-curl "http://localhost:3000/api/flight-logs?aircraft_id=2"
+curl "http://localhost:3000/api/flight-logs?aircraft_id=2" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by date range
-curl "http://localhost:3000/api/flight-logs?start_date=2024-03-01&end_date=2024-03-31"
+curl "http://localhost:3000/api/flight-logs?start_date=2024-03-01&end_date=2024-03-31" \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### GET /api/flight-logs/:id
 Get specific flight log
 ```bash
-curl http://localhost:3000/api/flight-logs/1
+curl http://localhost:3000/api/flight-logs/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### POST /api/flight-logs
 Create new flight log
 ```bash
 curl -X POST http://localhost:3000/api/flight-logs \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "reservation_id": 1,
@@ -435,6 +563,7 @@ curl -X POST http://localhost:3000/api/flight-logs \
 Update flight log
 ```bash
 curl -X PUT http://localhost:3000/api/flight-logs/1 \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "tach_start": 2450.5,
@@ -448,7 +577,8 @@ curl -X PUT http://localhost:3000/api/flight-logs/1 \
 #### DELETE /api/flight-logs/:id
 Delete flight log
 ```bash
-curl -X DELETE http://localhost:3000/api/flight-logs/1
+curl -X DELETE http://localhost:3000/api/flight-logs/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 ### Billing
@@ -457,22 +587,27 @@ curl -X DELETE http://localhost:3000/api/flight-logs/1
 Get all billing records (with optional filters)
 ```bash
 # All billing records
-curl http://localhost:3000/api/billing
+curl http://localhost:3000/api/billing \
+  -H "Authorization: Bearer <token>"
 
 # Filter by member
-curl "http://localhost:3000/api/billing?member_id=1"
+curl "http://localhost:3000/api/billing?member_id=1" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by payment status
-curl "http://localhost:3000/api/billing?is_paid=false"
+curl "http://localhost:3000/api/billing?is_paid=false" \
+  -H "Authorization: Bearer <token>"
 
 # Filter by date range
-curl "http://localhost:3000/api/billing?start_date=2024-03-01&end_date=2024-03-31"
+curl "http://localhost:3000/api/billing?start_date=2024-03-01&end_date=2024-03-31" \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### POST /api/billing/generate
 Generate billing record from flight log
 ```bash
 curl -X POST http://localhost:3000/api/billing/generate \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "flight_log_id": 1
@@ -482,13 +617,15 @@ curl -X POST http://localhost:3000/api/billing/generate \
 #### PUT /api/billing/:id/pay
 Mark billing as paid
 ```bash
-curl -X PUT http://localhost:3000/api/billing/1/pay
+curl -X PUT http://localhost:3000/api/billing/1/pay \
+  -H "Authorization: Bearer <token>"
 ```
 
 #### GET /api/billing/summary/:member_id
 Get billing summary for a member
 ```bash
-curl http://localhost:3000/api/billing/summary/1
+curl http://localhost:3000/api/billing/summary/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 Response:
@@ -505,7 +642,8 @@ Response:
 #### DELETE /api/billing/:id
 Delete billing record
 ```bash
-curl -X DELETE http://localhost:3000/api/billing/1
+curl -X DELETE http://localhost:3000/api/billing/1 \
+  -H "Authorization: Bearer <token>"
 ```
 
 ## Workflow Example
@@ -515,6 +653,7 @@ curl -X DELETE http://localhost:3000/api/billing/1
 1. **Create a reservation:**
 ```bash
 curl -X POST http://localhost:3000/api/reservations \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "member_id": 1,
@@ -528,6 +667,7 @@ curl -X POST http://localhost:3000/api/reservations \
 2. **After the flight, create a flight log:**
 ```bash
 curl -X POST http://localhost:3000/api/flight-logs \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "reservation_id": 1,
@@ -545,6 +685,7 @@ curl -X POST http://localhost:3000/api/flight-logs \
 3. **Generate billing:**
 ```bash
 curl -X POST http://localhost:3000/api/billing/generate \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{
     "flight_log_id": 1
@@ -554,84 +695,17 @@ curl -X POST http://localhost:3000/api/billing/generate \
 
 4. **Mark as paid when member pays:**
 ```bash
-curl -X PUT http://localhost:3000/api/billing/1/pay
+curl -X PUT http://localhost:3000/api/billing/1/pay \
+  -H "Authorization: Bearer <token>"
 # Returns: { "id": 1, "is_paid": true, "payment_date": "2024-03-20", ... }
 ```
 
 5. **Check member's billing summary:**
 ```bash
-curl http://localhost:3000/api/billing/summary/1
+curl http://localhost:3000/api/billing/summary/1 \
+  -H "Authorization: Bearer <token>"
 # Returns total hours flown, amount owed, amount paid, etc.
 ```
-
-## Authentication & Authorization
-
-This API uses JWT authentication for all endpoints. All requests require a valid Bearer token.
-
-### User Roles
-
-The system enforces three user roles with specific permissions:
-
-| Role | Permissions |
-|------|------------|
-| **admin** | Full access to all endpoints (create, read, update, delete on all resources) |
-| **operator** | Read access to members and most resources; limited write permissions |
-| **member** | Personal access to own flight logs and reservations only |
-
-### Environment Variables
-
-Required environment variables (minimum):
-
-- `JWT_SECRET` — secret used to sign JWT tokens
-- `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT` — PostgreSQL connection
-
-Optional environment variables:
-
-- `SSL_KEY_PATH` — path to SSL private key file for HTTPS support
-- `SSL_CERT_PATH` — path to SSL certificate file for HTTPS support
-
-### Auth Endpoints
-
-- `POST /api/users/register` — register a new member. Required fields: `first_name`, `last_name`, `email`, `password`.
-- `POST /api/users/login` — returns `{ token }` when successful.
-- `GET /api/users/profile` — protected route; include header `Authorization: Bearer <token>`.
-
-### Authentication Examples
-
-```bash
-# Register
-curl -X POST http://localhost:3000/api/users/register \
-  -H "Content-Type: application/json" \
-  -d '{"first_name":"Test","last_name":"User","email":"test@example.com","password":"password123"}'
-
-# Login
-curl -X POST http://localhost:3000/api/users/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"password123"}'
-
-# Access protected profile (replace <token> with login token)
-curl -H "Authorization: Bearer <token>" http://localhost:3000/api/users/profile
-```
-
-You can also run the smoke test script for full end-to-end testing against a live server:
-```bash
-bash test/smoke-test.sh
-```
-
-### Protected Endpoints
-
-**Note**: All API endpoints require authentication. Requests must include the following header:
-
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-Some endpoints additionally require specific user roles. For example:
-
-- **GET /api/members** — Requires 'admin' or 'operator' role
-- **POST /api/members** — Requires 'admin' role
-- **DELETE /api/members/:id** — Requires 'admin' role
-
 
 ## Data Models
 
