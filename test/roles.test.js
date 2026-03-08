@@ -55,6 +55,26 @@ jest.mock('pg', () => {
         return Promise.resolve({ rows: [{ id: 1 }] });
       }
 
+      // GET list of reservations
+      if (lt.includes('select r.*') && !lt.includes('where r.id =')) {
+        return Promise.resolve({ rows: [
+          { id: 1, member_id: 1, aircraft_id: 2, start_time: '2026-02-01T10:00:00Z', end_time: '2026-02-01T11:00:00Z', status: 'booked', notes: 'Mine' },
+          { id: 99, member_id: 99, aircraft_id: 3, start_time: '2026-03-01T10:00:00Z', end_time: '2026-03-01T11:00:00Z', status: 'booked', notes: 'Other member' }
+        ] });
+      }
+
+      // GET reservation by ID
+      if (lt.includes('select r.*') && lt.includes('where r.id =')) {
+        const id = params && params[0];
+        if (id === '1') {
+          return Promise.resolve({ rows: [{ id: 1, member_id: 1, aircraft_id: 2, start_time: '2026-02-01T10:00:00Z', end_time: '2026-02-01T11:00:00Z', status: 'booked', notes: 'Mine' }] });
+        }
+        if (id === '99') {
+          return Promise.resolve({ rows: [{ id: 99, member_id: 99, aircraft_id: 3, start_time: '2026-03-01T10:00:00Z', end_time: '2026-03-01T11:00:00Z', status: 'booked', notes: 'Other member' }] });
+        }
+        return Promise.resolve({ rows: [] });
+      }
+
       // Conflict check for reservations
       if (lt.includes('select id from reservations')) {
         return Promise.resolve({ rows: [] });
@@ -126,7 +146,7 @@ describe('Role-based access control', () => {
   test('Admin can create a member', async () => {
     mockUserRole = 'admin';
     mockUserId = 1;
-    const payload = { member_number: 'M-300', first_name: 'New', last_name: 'Member', email: 'new@example.com', phone: '555-0000' };
+    const payload = { member_number: 'M-300', first_name: 'New', last_name: 'Member', email: 'new@example.com', phone: '555-0000', password: 'Test1234!' };
     const res = await httpRequest(port, '/api/members', 'POST', payload, { Authorization: 'Bearer faketoken' });
     expect(res.statusCode).toBe(201);
   });
@@ -240,6 +260,35 @@ describe('Role-based access control', () => {
     mockUserId = 1;
     const res = await httpRequest(port, '/api/aircraft/1', 'DELETE', null, { Authorization: 'Bearer faketoken' });
     expect(res.statusCode).toBe(200);
+  });
+
+  // ---- Reservation visibility ----
+
+  test('Member can GET all reservations including those belonging to other members', async () => {
+    mockUserRole = 'member';
+    mockUserId = 1;
+    const res = await httpRequest(port, '/api/reservations', 'GET', null, { Authorization: 'Bearer faketoken' });
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    const otherMemberRes = res.body.find(r => r.member_id === 99);
+    expect(otherMemberRes).toBeDefined();
+  });
+
+  test('Member can GET a specific reservation belonging to another member', async () => {
+    mockUserRole = 'member';
+    mockUserId = 1;
+    const res = await httpRequest(port, '/api/reservations/99', 'GET', null, { Authorization: 'Bearer faketoken' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('id', 99);
+    expect(res.body).toHaveProperty('member_id', 99);
+  });
+
+  test('Operator can GET all reservations', async () => {
+    mockUserRole = 'operator';
+    mockUserId = 2;
+    const res = await httpRequest(port, '/api/reservations', 'GET', null, { Authorization: 'Bearer faketoken' });
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
   });
 
   // ---- Reservation ownership ----
