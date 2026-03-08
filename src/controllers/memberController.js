@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 const getMembers = async (req, res) => {
     const result = await pool.query(
@@ -24,16 +25,47 @@ const getMemberById = async (req, res) => {
 };
 
 const createMember = async (req, res) => {
-    const { member_number, first_name, last_name, email, phone } = req.body;
+    const { member_number, first_name, last_name, email, phone, password, role } = req.body;
 
-    const result = await pool.query(
-        `INSERT INTO members (member_number, first_name, last_name, email, phone)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING *`,
-        [member_number, first_name, last_name, email, phone]
-    );
+    // Validate required fields
+    if (!first_name || !last_name || !email || !password) {
+        return res.status(400).json({ error: 'Missing required fields: first_name, last_name, email, password' });
+    }
 
-    res.status(201).json(result.rows[0]);
+    try {
+        // Check if email already exists
+        const existingEmail = await pool.query('SELECT id FROM members WHERE email = $1', [email]);
+        if (existingEmail.rows.length > 0) {
+            return res.status(409).json({ error: 'Email already in use' });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const mNumber = member_number || `M-${Date.now()}`;
+
+        const result = await pool.query(
+            `INSERT INTO members (member_number, first_name, last_name, email, phone, password, role)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
+             RETURNING id, member_number, first_name, last_name, email, phone, password, role, is_active, created_at`,
+            [mNumber, first_name, last_name, email, phone || null, hashedPassword, role || 'member']
+        );
+
+        const newMember = result.rows[0];
+        res.status(201).json({
+            id: newMember.id,
+            member_number: newMember.member_number,
+            first_name: newMember.first_name,
+            last_name: newMember.last_name,
+            email: newMember.email,
+            phone: newMember.phone,
+            role: newMember.role,
+            is_active: newMember.is_active,
+            created_at: newMember.created_at
+        });
+    } catch (err) {
+        console.error('Member creation error:', err);
+        res.status(500).json({ error: 'Server error creating member' });
+    }
 };
 
 const updateMember = async (req, res) => {

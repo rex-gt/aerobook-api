@@ -14,7 +14,8 @@ const cors = require('cors');
 
 app.use(cors({
   origin: [
-    'http://localhost:4200',        // For local development
+    'https://localhost:5173',        // Vite development server (HTTPS)
+    'https://localhost:4200',        // Alternative development port (HTTPS)
     'https://aviation-club-scheduler.vercel.app' // For Vercel deployment
   ],
   credentials: true
