@@ -37,7 +37,7 @@ wingtime-api/
 │   └── sample-data.sql          # Sample data for testing
 ├── test/                        # Comprehensive test suite
 │   ├── emailService.test.js     # Email service tests (12 tests)
-│   ├── auth.test.js             # Authentication tests (24 tests)
+│   ├── auth.test.js             # Authentication tests (29 tests)
 │   ├── aircraft.test.js         # Aircraft endpoint tests (6 tests)
 │   ├── app.test.js              # API smoke tests (2 tests)
 │   ├── billing.test.js          # Billing endpoint tests (15 tests)
@@ -65,8 +65,9 @@ wingtime-api/
 - **HTTPS Support**: Optional SSL/TLS encryption with configurable certificates
 - **Protected Endpoints**: All API endpoints require authentication and role authorization
 - **Welcome Email Service**: Automated welcome emails with password reset links for new members
+- **Password Reset Flow**: Complete token-based password reset via email links
 - **User Profile Management**: Update profile information, change password with verification
-- **Comprehensive Testing**: 129 unit tests across 11 test suites (email + auth + 9 feature suites) plus 29 live server integration tests
+- **Comprehensive Testing**: 126 unit tests across 10 test suites plus 29 live server integration tests
 - **Clean Architecture**: Modular design with separation of concerns
 
 ## Architecture
@@ -201,6 +202,7 @@ All endpoints require a valid JWT (`Authorization: Bearer <token>`). Role requir
 |----------|--------|---------------|
 | `/api/users/register` | POST | Public |
 | `/api/users/login` | POST | Public |
+| `/api/users/reset-password` | POST | Public |
 | `/api/users/profile` | GET / PUT | Any authenticated |
 | `/api/members` | GET | admin, operator |
 | `/api/members/:id` | GET | Any authenticated |
@@ -290,12 +292,12 @@ Tests cover:
 
 ### Test Coverage
 
-The project includes comprehensive test coverage with **129 unit tests** across **11 test suites**, covering **100% of all endpoints**:
+The project includes comprehensive test coverage with **126 unit tests** across **10 test suites**, covering **100% of all endpoints**:
 
 | Test Suite | Tests | Coverage |
 |-----------|-------|----------|
 | emailService.test.js | 12 | Email service, SMTP config, token generation |
-| auth.test.js | 24 | Registration, Login, Profile, Updates, Password change, Welcome email |
+| auth.test.js | 29 | Registration, Login, Profile, Updates, Password change, Password reset, Welcome email |
 | aircraft.test.js | 6 | Aircraft CRUD, Availability |
 | app.test.js | 2 | API Smoke Tests |
 | billing.test.js | 15 | Billing CRUD, Generation, Summary |
@@ -304,7 +306,7 @@ The project includes comprehensive test coverage with **129 unit tests** across 
 | reservations.test.js | 8 | Reservations CRUD, Conflict Detection |
 | roles.test.js | 21 | Role-Based Access Control (admin/operator/member) |
 | utility.test.js | 12 | Aircraft Availability Utility |
-| **TOTAL** | **129** | **34 Endpoints + Email Service** |
+| **TOTAL** | **126** | **35 Endpoints + Email Service** |
 
 ### Running Tests
 
@@ -348,10 +350,10 @@ PASS test/aircraft.test.js
 PASS test/members.test.js
 PASS test/app.test.js
 
-Test Suites: 11 passed, 11 total
-Tests:       129 passed, 129 total
+Test Suites: 10 passed, 10 total
+Tests:       126 passed, 126 total
 Snapshots:   0 total
-Time:        1.523 s
+Time:        1.2 s
 ```
 
 ### Live Server Integration Tests
@@ -396,6 +398,34 @@ curl -X POST http://localhost:3000/api/users/login \
   -H "Content-Type: application/json" \
   -d '{"email": "admin@example.com", "password": "password123"}'
 ```
+
+#### POST /api/users/reset-password
+Reset password using token from welcome email
+```bash
+curl -X POST http://localhost:3000/api/users/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "jwt-token-from-email-link",
+    "password": "newpassword123"
+  }'
+```
+
+**Request Body:**
+- `token` (required): JWT token from the password reset link in welcome email
+- `password` (required): New password to set
+
+**Response (success):**
+```json
+{
+  "message": "Password reset successfully"
+}
+```
+
+**Error responses:**
+- `400` - Token and password are required
+- `400` - Invalid reset token
+- `400` - Reset token has expired. Please request a new one.
+- `404` - User not found
 
 #### GET /api/users/profile
 Get current user's profile
@@ -998,7 +1028,7 @@ The system prevents creating duplicate billing records for the same flight log.
 - Aircraft courier log tracking
 - Insurance document management
 - Fuel tracking and cost analysis
-- Password reset email flow (builds on welcome email foundation)
+- Forgot password flow (request reset via email for existing users)
 - Notification preferences per user
 - Bulk member import and management
 
