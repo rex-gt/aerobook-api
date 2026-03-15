@@ -1,7 +1,7 @@
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 const jwt = require('jsonwebtoken');
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendWelcomeEmail = async (user) => {
     const appUrl = process.env.APP_URL || 'https://localhost:5173';
@@ -13,9 +13,9 @@ const sendWelcomeEmail = async (user) => {
     );
     const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
 
-    const msg = {
+    await resend.emails.send({
+        from: process.env.RESEND_FROM || 'WingTime <noreply@wingtime.app>',
         to: user.email,
-        from: process.env.SENDGRID_FROM || 'noreply@wingtime.app',
         subject: 'Welcome to WingTime!',
         html: `
             <h1>Welcome to WingTime, ${user.first_name}!</h1>
@@ -25,9 +25,7 @@ const sendWelcomeEmail = async (user) => {
             <p>This link will expire in 24 hours.</p>
             <p>If you did not create this account, please ignore this email.</p>
         `,
-    };
-
-    await sgMail.send(msg);
+    });
 };
 
 module.exports = { sendWelcomeEmail };
