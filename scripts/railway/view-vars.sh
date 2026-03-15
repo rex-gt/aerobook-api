@@ -32,9 +32,9 @@ railway variables
 echo ""
 
 echo "=========================================="
-echo "SMTP Configuration"
+echo "Email Configuration (Resend)"
 echo "=========================================="
-railway variables | grep -E "SMTP_|APP_URL" || echo "No SMTP variables found"
+railway variables | grep -E "RESEND_|APP_URL" || echo "No Resend variables found"
 echo ""
 
 echo "=========================================="

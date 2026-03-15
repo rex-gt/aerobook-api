@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Railway Email Configuration Setup Script
-# This script sets up SMTP environment variables for Gmail on Railway
+# This script sets up Resend environment variables on Railway
 
 echo "=========================================="
-echo "WingTime - Railway Email Setup (Gmail)"
+echo "WingTime - Railway Email Setup (Resend)"
 echo "=========================================="
 echo ""
 
@@ -46,35 +46,27 @@ echo "Current Railway project:"
 railway status
 echo ""
 
-# Prompt for SMTP configuration
+# Prompt for Resend configuration
 echo "=========================================="
-echo "Gmail SMTP Configuration"
+echo "Resend Configuration"
 echo "=========================================="
 echo ""
 echo "You'll need:"
-echo "1. Your Gmail address"
-echo "2. A Gmail App Password (NOT your regular password)"
+echo "1. A Resend API key (from https://resend.com/api-keys)"
+echo "2. A verified 'From' address or domain"
 echo ""
-echo "To create an App Password:"
-echo "1. Go to https://myaccount.google.com/security"
-echo "2. Enable 2-Factor Authentication (required)"
-echo "3. Search for 'App Passwords'"
-echo "4. Generate password for 'Mail'"
-echo "5. Copy the 16-character password"
+echo "For testing, you can use: onboarding@resend.dev"
+echo "For production, verify your domain at https://resend.com/domains"
 echo ""
 read -p "Press Enter when ready to continue..."
 echo ""
 
-# Get SMTP configuration
-read -p "Enter your Gmail address: " gmail_address
+# Get Resend configuration
+read -p "Enter your Resend API key (starts with re_): " resend_api_key
 echo ""
 
-read -p "Enter your Gmail App Password (16 characters, no spaces): " -s gmail_app_password
-echo ""
-echo ""
-
-read -p "Enter the 'From' email address [default: noreply@wingtime.app]: " smtp_from
-smtp_from=${smtp_from:-noreply@wingtime.app}
+read -p "Enter the 'From' address [default: WingTime <onboarding@resend.dev>]: " resend_from
+resend_from=${resend_from:-"WingTime <onboarding@resend.dev>"}
 echo ""
 
 read -p "Enter your app URL [default: https://wingtime.vercel.app]: " app_url
@@ -85,12 +77,8 @@ echo ""
 echo "=========================================="
 echo "Configuration Summary"
 echo "=========================================="
-echo "SMTP_HOST: smtp.gmail.com"
-echo "SMTP_PORT: 587"
-echo "SMTP_SECURE: false"
-echo "SMTP_USER: $gmail_address"
-echo "SMTP_PASS: [hidden]"
-echo "SMTP_FROM: $smtp_from"
+echo "RESEND_API_KEY: ${resend_api_key:0:10}..."
+echo "RESEND_FROM: $resend_from"
 echo "APP_URL: $app_url"
 echo ""
 
@@ -106,12 +94,8 @@ echo ""
 echo "Setting Railway environment variables..."
 echo ""
 
-railway variables set SMTP_HOST=smtp.gmail.com
-railway variables set SMTP_PORT=587
-railway variables set SMTP_SECURE=false
-railway variables set SMTP_USER="$gmail_address"
-railway variables set SMTP_PASS="$gmail_app_password"
-railway variables set SMTP_FROM="$smtp_from"
+railway variables set RESEND_API_KEY="$resend_api_key"
+railway variables set RESEND_FROM="$resend_from"
 railway variables set APP_URL="$app_url"
 
 echo ""
@@ -123,15 +107,13 @@ echo "=========================================="
 echo "Verifying Variables"
 echo "=========================================="
 echo ""
-railway variables | grep -E "(SMTP_|APP_URL)"
+railway variables | grep -E "(RESEND_|APP_URL)"
 echo ""
 
 # Ask about JWT secret
 echo "=========================================="
 echo "JWT Secret Configuration"
 echo "=========================================="
-echo ""
-echo "Your emailService.js uses JWT_SECRET or RESET_TOKEN_SECRET."
 echo ""
 
 # Check if JWT_SECRET exists
@@ -142,7 +124,6 @@ else
     read -p "Would you like to set JWT_SECRET now? (y/n) " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Generate a random secret
         jwt_secret=$(openssl rand -base64 32)
         railway variables set JWT_SECRET="$jwt_secret"
         echo "✓ JWT_SECRET set"
@@ -157,7 +138,6 @@ else
     read -p "Would you like to set RESET_TOKEN_SECRET now? (y/n) " -n 1 -r
     echo ""
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        # Generate a random secret
         reset_secret=$(openssl rand -base64 32)
         railway variables set RESET_TOKEN_SECRET="$reset_secret"
         echo "✓ RESET_TOKEN_SECRET set"
@@ -172,7 +152,7 @@ echo ""
 echo "Next steps:"
 echo "1. Railway will automatically redeploy with new variables"
 echo "2. Check deployment: railway logs"
-echo "3. Test email sending from your app"
+echo "3. Test email: ./scripts/railway/test-email.sh"
 echo ""
 echo "To view all variables:"
 echo "  railway variables"

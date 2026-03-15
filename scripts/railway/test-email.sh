@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Railway Email Test Script
-# Tests email configuration using Railway shell
+# Tests Resend email configuration using Railway environment
 
 echo "=========================================="
-echo "WingTime - Railway Email Test"
+echo "WingTime - Railway Email Test (Resend)"
 echo "=========================================="
 echo ""
 
@@ -22,7 +22,7 @@ echo ""
 read -p "Enter email address to send test email to: " test_email
 echo ""
 
-echo "Testing email configuration..."
+echo "Testing Resend email configuration..."
 echo ""
 
 # Run inline Node.js code with Railway environment
@@ -36,11 +36,9 @@ const testUser = {
 };
 
 console.log('Sending test email to:', testUser.email);
-console.log('SMTP Config:', {
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  user: process.env.SMTP_USER,
-  from: process.env.SMTP_FROM
+console.log('Resend Config:', {
+  apiKey: process.env.RESEND_API_KEY ? process.env.RESEND_API_KEY.substring(0, 10) + '...' : 'NOT SET',
+  from: process.env.RESEND_FROM || 'NOT SET'
 });
 
 sendWelcomeEmail(testUser)
