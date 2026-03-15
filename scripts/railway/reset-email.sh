@@ -4,7 +4,7 @@
 # Removes Resend environment variables from Railway
 
 echo "=========================================="
-echo "WingTime - Railway Email Reset"
+echo "AeroBook - Railway Email Reset"
 echo "=========================================="
 echo ""
 

@@ -31,7 +31,7 @@ describe('Email Service', () => {
     process.env.SMTP_PORT = '587';
     process.env.SMTP_USER = 'test@gmail.com';
     process.env.SMTP_PASS = 'password123';
-    process.env.SMTP_FROM = 'noreply@wingtime.app';
+    process.env.SMTP_FROM = 'noreply@aerobook.app';
     process.env.SMTP_SECURE = 'false';
     process.env.APP_URL = 'http://localhost:3000';
     process.env.JWT_SECRET = 'test-secret';
@@ -52,7 +52,7 @@ describe('Email Service', () => {
 
     const emailCall = mockSendMail.mock.calls[0][0];
     expect(emailCall.to).toBe('john@example.com');
-    expect(emailCall.from).toBe('noreply@wingtime.app');
+    expect(emailCall.from).toBe('noreply@aerobook.app');
     expect(emailCall.subject).toBe('Welcome to WingTime!');
   });
 
@@ -265,7 +265,7 @@ describe('Email Service', () => {
     const emailCall = mockSendMail4.mock.calls[0][0];
     expect(emailCall.from).toBe('hello@mycompany.com');
 
-    process.env.SMTP_FROM = 'noreply@wingtime.app';
+    process.env.SMTP_FROM = 'noreply@aerobook.app';
   });
 
   test('sendWelcomeEmail should handle email sending errors gracefully', async () => {

@@ -4,7 +4,7 @@
 # Tests Resend email configuration using Railway environment
 
 echo "=========================================="
-echo "WingTime - Railway Email Test (Resend)"
+echo "AeroBook - Railway Email Test (Resend)"
 echo "=========================================="
 echo ""
 

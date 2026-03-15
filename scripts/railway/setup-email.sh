@@ -4,7 +4,7 @@
 # This script sets up Resend environment variables on Railway
 
 echo "=========================================="
-echo "WingTime - Railway Email Setup (Resend)"
+echo "AeroBook - Railway Email Setup (Resend)"
 echo "=========================================="
 echo ""
 
@@ -65,12 +65,12 @@ echo ""
 read -p "Enter your Resend API key (starts with re_): " resend_api_key
 echo ""
 
-read -p "Enter the 'From' address [default: WingTime <onboarding@resend.dev>]: " resend_from
-resend_from=${resend_from:-"WingTime <onboarding@resend.dev>"}
+read -p "Enter the 'From' address [default: AeroBook <noreply@aerobook.app>]: " resend_from
+resend_from=${resend_from:-"AeroBook <noreply@aerobook.app>"}
 echo ""
 
-read -p "Enter your app URL [default: https://wingtime.vercel.app]: " app_url
-app_url=${app_url:-https://wingtime.vercel.app}
+read -p "Enter your app URL [default: https://aerobook.app]: " app_url
+app_url=${app_url:-https://aerobook.app}
 echo ""
 
 # Confirm settings

@@ -14,14 +14,14 @@ const sendWelcomeEmail = async (user) => {
     const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
 
     await resend.emails.send({
-        from: process.env.RESEND_FROM || 'WingTime <noreply@wingtime.app>',
+        from: process.env.RESEND_FROM || 'AeroBook <noreply@aerobook.app>',
         to: user.email,
-        subject: 'Welcome to WingTime!',
+        subject: 'Welcome to AeroBook!',
         html: `
-            <h1>Welcome to WingTime, ${user.first_name}!</h1>
-            <p>Your account has been successfully created. You can now access the WingTime flight scheduling app.</p>
-            <p>To set up your WingTime password, please click the link below:</p>
-            <p><a href="${resetLink}">Set up your WingTime password</a></p>
+            <h1>Welcome to AeroBook, ${user.first_name}!</h1>
+            <p>Your account has been successfully created. You can now access the AeroBook flight scheduling app.</p>
+            <p>To set up your AeroBook password, please click the link below:</p>
+            <p><a href="${resetLink}">Set up your AeroBook password</a></p>
             <p>This link will expire in 24 hours.</p>
             <p>If you did not create this account, please ignore this email.</p>
         `,
