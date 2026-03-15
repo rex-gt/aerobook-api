@@ -11,6 +11,8 @@ const createTransporter = () => {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
         },
+        // Force IPv4 - Railway doesn't support IPv6 outbound
+        family: 4,
     });
 };
 
