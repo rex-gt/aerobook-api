@@ -1,6 +1,6 @@
-# Railway CLI Scripts for WingTime
+# Railway CLI Scripts for AeroBook
 
-Batch scripts to manage Railway environment variables and deployments from your local CLI.
+Scripts to manage Railway environment variables and deployments from your local CLI.
 
 ## Prerequisites
 
@@ -16,158 +16,126 @@ Batch scripts to manage Railway environment variables and deployments from your 
 
 3. **Link to your project:**
    ```bash
-   cd wingtime-api
+   cd aerobook-api
    railway link
    ```
 
 ## Available Scripts
 
-### 1. `railway-setup-email.sh` - Configure Email (Gmail)
+| Script | Description |
+|--------|-------------|
+| `setup-full.sh` | Complete environment setup (recommended for new projects) |
+| `setup-app.sh` | Configure frontend URL and CORS settings |
+| `setup-email.sh` | Configure Resend email service |
+| `setup-secrets.sh` | Generate JWT and security secrets |
+| `view-vars.sh` | View all environment variables by category |
+| `test-email.sh` | Test email configuration |
+| `reset-email.sh` | Remove email configuration |
+| `cleanup-legacy-vars.sh` | Remove old/unused variables |
 
-Sets up SMTP environment variables for sending emails via Gmail.
+## Quick Start
 
-**What you need:**
-- Your Gmail address
-- Gmail App Password (16 characters)
-  - Go to https://myaccount.google.com/security
-  - Enable 2-Factor Authentication
-  - Create App Password for "Mail"
+### New Project Setup
 
-**Usage:**
 ```bash
-chmod +x railway-setup-email.sh
-./railway-setup-email.sh
+# Make all scripts executable
+chmod +x scripts/railway/*.sh
+
+# Run the complete setup (recommended)
+./scripts/railway/setup-full.sh
 ```
 
-**Variables it sets:**
-- `SMTP_HOST` - smtp.gmail.com
-- `SMTP_PORT` - 587
-- `SMTP_SECURE` - false
-- `SMTP_USER` - Your Gmail address
-- `SMTP_PASS` - Your App Password
-- `SMTP_FROM` - From address for emails
-- `APP_URL` - Your frontend URL
-- `JWT_SECRET` - (optional) For token generation
-- `RESET_TOKEN_SECRET` - (optional) For password reset tokens
+This will configure:
+- Frontend URL and CORS origins
+- JWT and security secrets
+- Resend email configuration
+- Clean up any legacy variables
 
-### 2. `railway-view-vars.sh` - View All Variables
+### Individual Setup Scripts
 
-Displays all environment variables currently set on Railway, organized by category.
-
-**Usage:**
 ```bash
-chmod +x railway-view-vars.sh
-./railway-view-vars.sh
+# Configure app/frontend settings only
+./scripts/railway/setup-app.sh
+
+# Configure email only
+./scripts/railway/setup-email.sh
+
+# Generate new security secrets
+./scripts/railway/setup-secrets.sh
+
+# View current configuration
+./scripts/railway/view-vars.sh
 ```
 
-**Shows:**
-- All variables
-- SMTP configuration
-- JWT/Auth configuration
-- Database configuration
-- Node/App configuration
+## Environment Variables
 
-### 3. `railway-test-email.sh` - Test Email Sending
+### Required Variables
 
-Tests your email configuration by sending a test email.
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `APP_URL` | Frontend application URL | `https://aerobook.app` |
+| `ALLOWED_ORIGINS` | CORS allowed origins | `https://aerobook.app,https://staging.aerobook.app` |
+| `JWT_SECRET` | Secret for JWT tokens | Auto-generated |
+| `RESET_TOKEN_SECRET` | Secret for password reset tokens | Auto-generated |
+| `RESEND_API_KEY` | Resend API key | `re_xxxxxxxxx` |
+| `RESEND_FROM` | Email sender address | `AeroBook <noreply@aerobook.app>` |
 
-**Usage:**
+### Auto-Provided by Railway
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string (when DB attached) |
+| `RAILWAY_*` | Railway system variables |
+
+## Resend Email Setup
+
+1. **Create a Resend account:** https://resend.com
+
+2. **Get your API key:** https://resend.com/api-keys
+
+3. **Verify your domain:** https://resend.com/domains
+   - Add DNS records as instructed
+   - Or use `onboarding@resend.dev` for testing (your email only)
+
+4. **Run the setup script:**
+   ```bash
+   ./scripts/railway/setup-email.sh
+   ```
+
+5. **Test email sending:**
+   ```bash
+   ./scripts/railway/test-email.sh
+   ```
+
+## Common Commands
+
 ```bash
-chmod +x railway-test-email.sh
-./railway-test-email.sh
-```
+# View current project
+railway status
 
-**Note:** Requires a test endpoint in your API (see below).
+# View all variables
+railway variables
 
-### 4. `railway-reset-email.sh` - Remove Email Configuration
+# Set a single variable
+railway variables set KEY=value
 
-Removes all SMTP-related environment variables from Railway.
+# Delete a variable
+railway variables delete KEY --yes
 
-**Usage:**
-```bash
-chmod +x railway-reset-email.sh
-./railway-reset-email.sh
-```
-
-**Use this when:**
-- Switching email providers
-- Removing email functionality
-- Resetting configuration to start fresh
-
-## Quick Start Guide
-
-### Initial Email Setup
-
-```bash
-# 1. Make scripts executable
-chmod +x railway-*.sh
-
-# 2. Set up email configuration
-./railway-setup-email.sh
-
-# 3. Verify variables were set
-./railway-view-vars.sh
-
-# 4. Check Railway logs
+# View logs
 railway logs
 
-# 5. Test email (once test endpoint is added)
-./railway-test-email.sh
-```
+# Live log stream
+railway logs --follow
 
-## Gmail App Password Setup
+# Open Railway dashboard
+railway open
 
-Since you're using Gmail, you need an App Password:
+# Deploy immediately
+railway up
 
-1. Go to https://myaccount.google.com/security
-2. Click on "2-Step Verification" (enable it if not already)
-3. Scroll down and click "App passwords"
-4. Select "Mail" and your device
-5. Click "Generate"
-6. Copy the 16-character password (no spaces)
-7. Use this password in the setup script
-
-**Important:** Do NOT use your regular Gmail password!
-
-## Add Test Email Endpoint to Your API
-
-Add this to your `server.js`:
-
-```javascript
-// Test email endpoint
-app.post('/api/test-email', asyncHandler(async (req, res) => {
-  const { to } = req.body;
-  const { sendWelcomeEmail } = require('./emailService');
-  
-  try {
-    // Create a test user object
-    const testUser = {
-      id: 999,
-      first_name: 'Test',
-      email: to || process.env.SMTP_USER
-    };
-    
-    await sendWelcomeEmail(testUser);
-    
-    res.json({ 
-      message: 'Test email sent successfully',
-      to: testUser.email 
-    });
-  } catch (error) {
-    console.error('Email test failed:', error);
-    res.status(500).json({ 
-      error: 'Failed to send email',
-      message: error.message 
-    });
-  }
-}));
-```
-
-Then commit and push:
-```bash
-git add server.js
-git commit -m "Add test email endpoint"
-git push
+# Run a command with Railway env vars
+railway run npm test
 ```
 
 ## Troubleshooting
@@ -184,31 +152,7 @@ railway login
 
 ### "Not linked to project"
 ```bash
-cd wingtime-api
 railway link
-```
-
-### Check if variables are set
-```bash
-railway variables
-# or
-./railway-view-vars.sh
-```
-
-### View deployment logs
-```bash
-railway logs
-# or for live logs
-railway logs --follow
-```
-
-### Test SMTP connection
-```bash
-# Connect to Railway shell
-railway shell
-
-# Test with Node
-node -e "console.log('SMTP_HOST:', process.env.SMTP_HOST)"
 ```
 
 ### Email not sending
@@ -220,120 +164,54 @@ node -e "console.log('SMTP_HOST:', process.env.SMTP_HOST)"
 
 2. **Verify variables:**
    ```bash
-   ./railway-view-vars.sh
+   ./scripts/railway/view-vars.sh
    ```
 
-3. **Test Gmail App Password locally:**
+3. **Test locally with Railway env:**
    ```bash
-   cd wingtime-api
-   railway run node
-   > require('./emailService').sendWelcomeEmail({id:1, first_name:'Test', email:'your@email.com'})
+   railway run node -e "
+     const {sendWelcomeEmail} = require('./src/services/emailService');
+     sendWelcomeEmail({id:1, first_name:'Test', email:'your@email.com'})
+       .then(() => console.log('Sent!'))
+       .catch(e => console.error(e));
+   "
    ```
 
-4. **Common issues:**
-   - Wrong App Password → Regenerate it
-   - 2FA not enabled → Enable in Gmail settings
-   - Blocked by Gmail → Check Gmail security alerts
-   - Wrong SMTP settings → Should be smtp.gmail.com:587
+### Clean up legacy variables
 
-## Other Useful Railway Commands
+If you have old SMTP or DB_ variables from a previous configuration:
 
 ```bash
-# View current project
-railway status
-
-# View all variables
-railway variables
-
-# Set a single variable
-railway variables set KEY=value
-
-# Delete a variable
-railway variables delete KEY
-
-# View logs
-railway logs
-
-# Live log stream
-railway logs --follow
-
-# Open Railway dashboard
-railway open
-
-# Deploy immediately
-railway up
-
-# Enter Railway shell (with all env vars)
-railway shell
-
-# Run a command with Railway env vars
-railway run npm test
+./scripts/railway/cleanup-legacy-vars.sh
 ```
 
-## Production Email Providers
+## File Structure
 
-For production, consider these alternatives to Gmail:
-
-### SendGrid (Free: 100 emails/day)
-```bash
-SMTP_HOST=smtp.sendgrid.net
-SMTP_PORT=587
-SMTP_USER=apikey
-SMTP_PASS=your-sendgrid-api-key
 ```
-
-### Resend (Free: 3,000 emails/month)
-```bash
-# Requires code changes to use Resend SDK
-npm install resend
-```
-
-### Postmark (Free: 100 emails/month)
-```bash
-SMTP_HOST=smtp.postmarkapp.com
-SMTP_PORT=587
-SMTP_USER=your-server-token
-SMTP_PASS=your-server-token
+scripts/railway/
+├── README.md                # This file
+├── setup-full.sh           # Complete environment setup
+├── setup-app.sh            # Frontend/CORS configuration
+├── setup-email.sh          # Resend email configuration
+├── setup-secrets.sh        # JWT/security secrets
+├── view-vars.sh            # View all variables
+├── test-email.sh           # Test email sending
+├── reset-email.sh          # Remove email configuration
+└── cleanup-legacy-vars.sh  # Remove legacy variables
 ```
 
 ## Security Best Practices
 
-1. **Never commit secrets to Git:**
-   - `.env` should be in `.gitignore`
-   - Use `.env.example` for templates
+1. **Never commit secrets to Git** - Use Railway variables for all secrets
 
-2. **Use different credentials for dev/prod:**
-   - Local: Test Gmail account
-   - Railway: Production email service
+2. **Use different environments** - Create staging/production environments in Railway
 
-3. **Rotate App Passwords regularly:**
-   - Generate new App Password
-   - Update Railway: `railway variables set SMTP_PASS=new-password`
+3. **Rotate secrets periodically** - Run `setup-secrets.sh` to regenerate
 
-4. **Monitor email sending:**
-   - Check Railway logs regularly
-   - Set up alerts for errors
+4. **Monitor logs** - Check Railway logs for errors regularly
 
-## Files Structure
+## Links
 
-```
-wingtime-api/
-├── railway-setup-email.sh    # Setup SMTP configuration
-├── railway-view-vars.sh      # View all variables
-├── railway-test-email.sh     # Test email sending
-├── railway-reset-email.sh    # Remove email config
-├── RAILWAY_SCRIPTS_README.md # This file
-├── emailService.js           # Your email service
-├── server.js                 # Express server
-└── .env.example              # Template for local env vars
-```
-
-## Support
-
-- Railway Docs: https://docs.railway.app/
-- Railway CLI: https://docs.railway.app/develop/cli
-- Gmail App Passwords: https://support.google.com/accounts/answer/185833
-
-## License
-
-MIT
+- [Railway Documentation](https://docs.railway.app/)
+- [Railway CLI Reference](https://docs.railway.app/develop/cli)
+- [Resend Documentation](https://resend.com/docs)

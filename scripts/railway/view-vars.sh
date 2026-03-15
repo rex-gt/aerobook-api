@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Railway Variables Viewer
-# Quick script to view all environment variables on Railway
+# Displays all environment variables organized by category
 
 echo "=========================================="
-echo "Railway Environment Variables"
+echo "AeroBook - Railway Environment Variables"
 echo "=========================================="
 echo ""
 
@@ -26,31 +26,43 @@ railway status
 echo ""
 
 echo "=========================================="
-echo "All Variables"
+echo "📧 Email Configuration (Resend)"
 echo "=========================================="
-railway variables
+railway variables | grep -E "RESEND_" || echo "No Resend variables found"
 echo ""
 
 echo "=========================================="
-echo "Email Configuration (Resend)"
+echo "🌐 App / Frontend Configuration"
 echo "=========================================="
-railway variables | grep -E "RESEND_|APP_URL" || echo "No Resend variables found"
+railway variables | grep -E "APP_URL|ALLOWED_ORIGINS" || echo "No app config found"
 echo ""
 
 echo "=========================================="
-echo "JWT/Auth Configuration"
+echo "🔐 Security / JWT Configuration"
 echo "=========================================="
-railway variables | grep -E "JWT_|RESET_TOKEN" || echo "No JWT variables found"
+railway variables | grep -E "JWT_SECRET|RESET_TOKEN" | sed 's/\(.\{50\}\).*/\1.../' || echo "No JWT variables found"
 echo ""
 
 echo "=========================================="
-echo "Database Configuration"
+echo "🗄️  Database Configuration"
 echo "=========================================="
-railway variables | grep -E "DATABASE_|DB_|POSTGRES" || echo "No database variables found"
+railway variables | grep -E "DATABASE_URL|POSTGRES" | sed 's/\(.\{60\}\).*/\1.../' || echo "No database variables found"
 echo ""
 
 echo "=========================================="
-echo "Node/App Configuration"
+echo "🚂 Railway System Variables"
 echo "=========================================="
-railway variables | grep -E "NODE_ENV|PORT" || echo "No Node variables found"
+railway variables | grep -E "RAILWAY_" || echo "No Railway variables found"
 echo ""
+
+# Check for legacy variables
+legacy=$(railway variables | grep -E "SMTP_|^║ DB_")
+if [ -n "$legacy" ]; then
+    echo "=========================================="
+    echo "⚠️  Legacy Variables (should be removed)"
+    echo "=========================================="
+    echo "$legacy"
+    echo ""
+    echo "Run ./scripts/railway/cleanup-legacy-vars.sh to remove these"
+    echo ""
+fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Railway Legacy Variables Cleanup
-# Removes old SMTP environment variables that are no longer needed
+# Removes old/unused environment variables
 
 echo "=========================================="
 echo "AeroBook - Cleanup Legacy Variables"
@@ -18,29 +18,38 @@ echo "Current project:"
 railway status
 echo ""
 
-echo "Checking for legacy SMTP variables..."
+echo "Scanning for legacy variables..."
 echo ""
 
-# Check which legacy variables exist
-legacy_vars=""
-railway variables | grep -q "SMTP_HOST" && legacy_vars="$legacy_vars SMTP_HOST"
-railway variables | grep -q "SMTP_PORT" && legacy_vars="$legacy_vars SMTP_PORT"
-railway variables | grep -q "SMTP_SECURE" && legacy_vars="$legacy_vars SMTP_SECURE"
-railway variables | grep -q "SMTP_USER" && legacy_vars="$legacy_vars SMTP_USER"
-railway variables | grep -q "SMTP_PASS" && legacy_vars="$legacy_vars SMTP_PASS"
-railway variables | grep -q "SMTP_FROM" && legacy_vars="$legacy_vars SMTP_FROM"
+# Define legacy variable patterns
+legacy_found=false
 
-if [ -z "$legacy_vars" ]; then
-    echo "✓ No legacy SMTP variables found. Nothing to clean up."
+# Check for SMTP variables (replaced by Resend)
+smtp_vars=$(railway variables | grep -E "SMTP_" | awk -F'│' '{print $1}' | xargs)
+if [ -n "$smtp_vars" ]; then
+    echo "📧 Legacy SMTP variables found (replaced by Resend):"
+    railway variables | grep -E "SMTP_"
+    echo ""
+    legacy_found=true
+fi
+
+# Check for old DB_ variables (Railway uses DATABASE_URL)
+db_vars=$(railway variables | grep -E "^║ DB_" | awk -F'│' '{print $1}' | xargs)
+if [ -n "$db_vars" ]; then
+    echo "🗄️  Legacy DB_ variables found (Railway provides DATABASE_URL):"
+    railway variables | grep -E "^║ DB_"
+    echo ""
+    legacy_found=true
+fi
+
+if [ "$legacy_found" = false ]; then
+    echo "✓ No legacy variables found. Environment is clean!"
     echo ""
     exit 0
 fi
 
-echo "Found legacy variables:"
-railway variables | grep -E "SMTP_"
-echo ""
-
-read -p "Delete these legacy SMTP variables? (y/n) " -n 1 -r
+echo "=========================================="
+read -p "Delete all legacy variables? (y/n) " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Cleanup cancelled."
@@ -48,10 +57,10 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo ""
-echo "Removing legacy SMTP variables..."
+echo "Removing legacy variables..."
 echo ""
 
-# Delete legacy variables
+# Remove SMTP variables
 railway variables delete SMTP_HOST --yes 2>/dev/null && echo "✓ Deleted SMTP_HOST"
 railway variables delete SMTP_PORT --yes 2>/dev/null && echo "✓ Deleted SMTP_PORT"
 railway variables delete SMTP_SECURE --yes 2>/dev/null && echo "✓ Deleted SMTP_SECURE"
@@ -59,9 +68,16 @@ railway variables delete SMTP_USER --yes 2>/dev/null && echo "✓ Deleted SMTP_U
 railway variables delete SMTP_PASS --yes 2>/dev/null && echo "✓ Deleted SMTP_PASS"
 railway variables delete SMTP_FROM --yes 2>/dev/null && echo "✓ Deleted SMTP_FROM"
 
+# Remove old DB_ variables
+railway variables delete DB_HOST --yes 2>/dev/null && echo "✓ Deleted DB_HOST"
+railway variables delete DB_PORT --yes 2>/dev/null && echo "✓ Deleted DB_PORT"
+railway variables delete DB_USER --yes 2>/dev/null && echo "✓ Deleted DB_USER"
+railway variables delete DB_PASSWORD --yes 2>/dev/null && echo "✓ Deleted DB_PASSWORD"
+railway variables delete DB_NAME --yes 2>/dev/null && echo "✓ Deleted DB_NAME"
+
 echo ""
 echo "✓ Legacy cleanup complete!"
 echo ""
-echo "Current email configuration (Resend):"
-railway variables | grep -E "RESEND_" || echo "No Resend variables found"
+echo "Current environment variables:"
+./scripts/railway/view-vars.sh 2>/dev/null || railway variables
 echo ""
