@@ -71,11 +71,6 @@ jest.mock('bcryptjs', () => ({
   hash: jest.fn(() => Promise.resolve('$2a$10$hashedpassword'))
 }));
 
-const mockSend = jest.fn(() => Promise.resolve({ id: 'test-email-id' }));
-jest.mock('resend', () => ({
-  Resend: jest.fn(() => ({ emails: { send: mockSend } }))
-}));
-
 const app = require('../src/index');
 
 function httpRequest(port, path, method = 'GET', data = null, headers = {}) {
@@ -102,68 +97,10 @@ describe('Auth endpoints', () => {
   beforeAll(() => new Promise((resolve) => { server = app.listen(0, () => { port = server.address().port; resolve(); }); }));
   afterAll(() => new Promise((resolve) => server.close(resolve)));
 
-  test('POST /api/users/register creates a user', async () => {
-    const payload = { member_number: 'M-200', first_name: 'New', last_name: 'User', email: 'new@example.com', password: 'pass' };
+  test('POST /api/users/register returns 404 (endpoint removed)', async () => {
+    const payload = { first_name: 'Test', last_name: 'User', email: 'test@example.com', password: 'pass' };
     const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('email', 'new@example.com');
-    expect(res.body).toHaveProperty('token', 'signed-token');
-  });
-
-  test('POST /api/users/register fails with duplicate email', async () => {
-    const payload = { member_number: 'M-300', first_name: 'Duplicate', last_name: 'Email', email: 'exists@example.com', password: 'pass' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(409);
-    expect(res.body).toHaveProperty('message', 'Email already registered');
-  });
-
-  test('POST /api/users/register fails when missing email', async () => {
-    const payload = { member_number: 'M-301', first_name: 'No', last_name: 'Email', password: 'pass' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('message', 'Missing required fields');
-  });
-
-  test('POST /api/users/register fails when missing password', async () => {
-    const payload = { member_number: 'M-302', first_name: 'No', last_name: 'Pass', email: 'nopass@example.com' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('message', 'Missing required fields');
-  });
-
-  test('POST /api/users/register fails when missing first_name', async () => {
-    const payload = { member_number: 'M-303', last_name: 'Missing', email: 'nofirst@example.com', password: 'pass' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('message', 'Missing required fields');
-  });
-
-  test('POST /api/users/register fails when missing last_name', async () => {
-    const payload = { member_number: 'M-304', first_name: 'Test', email: 'nolast@example.com', password: 'pass' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toHaveProperty('message', 'Missing required fields');
-  });
-
-  test('POST /api/users/register creates member role by default', async () => {
-    const payload = { member_number: 'M-305', first_name: 'Default', last_name: 'Role', email: 'defaultrole@example.com', password: 'pass' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('token');
-  });
-
-  test('POST /api/users/register accepts custom role', async () => {
-    const payload = { member_number: 'M-306', first_name: 'Custom', last_name: 'Role', email: 'customrole@example.com', password: 'pass', role: 'operator' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('token');
-  });
-
-  test('POST /api/users/register includes phone if provided', async () => {
-    const payload = { member_number: 'M-307', first_name: 'With', last_name: 'Phone', email: 'withphone@example.com', password: 'pass', phone: '555-1234' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(201);
-    expect(res.body).toHaveProperty('token');
+    expect(res.statusCode).toBe(404);
   });
 
   test('POST /api/users/login succeeds with valid credentials', async () => {
@@ -186,20 +123,6 @@ describe('Auth endpoints', () => {
     const res = await httpRequest(port, '/api/users/login', 'POST', payload);
     expect(res.statusCode).toBe(401);
     expect(res.body).toHaveProperty('message', 'Invalid credentials');
-  });
-
-  test('POST /api/users/register sends a welcome email', async () => {
-    mockSend.mockClear();
-    const payload = { member_number: 'M-308', first_name: 'Email', last_name: 'Test', email: 'emailtest@example.com', password: 'pass' };
-    const res = await httpRequest(port, '/api/users/register', 'POST', payload);
-    expect(res.statusCode).toBe(201);
-    // Allow the fire-and-forget email to complete
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(mockSend).toHaveBeenCalledTimes(1);
-    const mailOptions = mockSend.mock.calls[0][0];
-    expect(mailOptions.to).toBe('emailtest@example.com');
-    expect(mailOptions.subject).toMatch(/welcome/i);
-    expect(mailOptions.html).toMatch(/reset-password/i);
   });
 
   test('GET /api/users/profile returns user profile when authenticated', async () => {

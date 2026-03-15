@@ -200,7 +200,6 @@ All endpoints require a valid JWT (`Authorization: Bearer <token>`). Role requir
 
 | Endpoint | Method | Required Role |
 |----------|--------|---------------|
-| `/api/users/register` | POST | Public |
 | `/api/users/login` | POST | Public |
 | `/api/users/reset-password` | POST | Public |
 | `/api/users/profile` | GET / PUT | Any authenticated |
@@ -218,11 +217,11 @@ All endpoints require a valid JWT (`Authorization: Bearer <token>`). Role requir
 
 ## Email Service
 
-The API includes an automated email service that sends welcome emails to newly registered members. This feature helps with member onboarding and provides a secure password setup link.
+The API includes an automated email service that sends welcome emails to newly created members. This feature helps with member onboarding and provides a secure password setup link.
 
 ### Welcome Email Flow
 
-1. **User Registration**: When a new member registers or is created by an admin
+1. **Member Creation**: When a new member is created by an admin
 2. **Email Generation**: A welcome email is automatically generated with:
    - Personalized greeting with the member's name
    - Secure password setup link with JWT token
@@ -368,7 +367,7 @@ bash test/smoke-test.sh
 bash test/smoke-test.sh https://other-host:3000
 ```
 
-The script registers a temporary admin user, exercises every endpoint (auth, members, aircraft, reservations, flight logs, billing), and cleans up all created records afterward.
+The script logs in with a seeded admin account, exercises every endpoint (auth, members, aircraft, reservations, flight logs, billing), and cleans up all created records afterward.
 
 > **Note**: Uses `curl -sk` to skip SSL certificate verification for self-signed certs. The server must be running before executing the script.
 
@@ -377,19 +376,6 @@ The script registers a temporary admin user, exercises every endpoint (auth, mem
 All protected endpoints require an `Authorization: Bearer <token>` header obtained from `/api/users/login`.
 
 ### Authentication
-
-#### POST /api/users/register
-Register a new user
-```bash
-curl -X POST http://localhost:3000/api/users/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john@example.com",
-    "password": "password123"
-  }'
-```
 
 #### POST /api/users/login
 Login and receive a JWT token
