@@ -1,5 +1,24 @@
 const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
+const dns = require('dns');
+const net = require('net');
+
+// Custom lookup function that forces IPv4
+const lookup4 = (hostname, options, callback) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    dns.resolve4(hostname, (err, addresses) => {
+        if (err) {
+            callback(err, null, null);
+        } else if (addresses && addresses.length > 0) {
+            callback(null, addresses[0], 4);
+        } else {
+            callback(new Error(`No IPv4 address found for ${hostname}`), null, null);
+        }
+    });
+};
 
 const createTransporter = () => {
     const smtpPort = parseInt(process.env.SMTP_PORT, 10) || 587;
@@ -10,6 +29,14 @@ const createTransporter = () => {
         auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS,
+        },
+        // Force IPv4 connection
+        tls: {
+            lookup: lookup4,
+        },
+        // Pass lookup to socket as well
+        socket: {
+            lookup: lookup4,
         },
     });
 };
