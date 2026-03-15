@@ -2,6 +2,15 @@
 
 # Railway App Configuration Setup Script
 # Sets up frontend URL and CORS configuration
+# Reads defaults from .env file
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Source .env file if it exists
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_ROOT/.env" | grep -v '^\s*$' | xargs)
+fi
 
 echo "=========================================="
 echo "AeroBook - App Configuration Setup"
@@ -36,16 +45,19 @@ if [ -n "$current_origins" ]; then
 fi
 echo ""
 
-read -p "Enter your frontend URL [default: https://aerobook.app]: " app_url
-app_url=${app_url:-https://aerobook.app}
+default_app_url="${APP_URL:-https://aerobook.app}"
+default_origins="${ALLOWED_ORIGINS:-$default_app_url}"
+
+read -p "Enter your frontend URL [default: $default_app_url]: " app_url
+app_url=${app_url:-$default_app_url}
 
 echo ""
 echo "ALLOWED_ORIGINS controls which domains can make API requests."
 echo "Separate multiple origins with commas (e.g., https://aerobook.app,https://staging.aerobook.app)"
 echo ""
 
-read -p "Enter allowed origins [default: $app_url]: " allowed_origins
-allowed_origins=${allowed_origins:-$app_url}
+read -p "Enter allowed origins [default: $default_origins]: " allowed_origins
+allowed_origins=${allowed_origins:-$default_origins}
 
 echo ""
 echo "=========================================="
@@ -66,8 +78,8 @@ echo ""
 echo "Setting Railway environment variables..."
 echo ""
 
-railway variables set APP_URL="$app_url"
-railway variables set ALLOWED_ORIGINS="$allowed_origins"
+railway variable set APP_URL="$app_url"
+railway variable set ALLOWED_ORIGINS="$allowed_origins"
 
 echo ""
 echo "✓ App configuration set successfully!"

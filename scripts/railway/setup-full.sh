@@ -2,6 +2,15 @@
 
 # Railway Complete Environment Setup Script
 # Sets up all environment variables for AeroBook API
+# Reads defaults from .env file
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Source .env file if it exists
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    export $(grep -v '^#' "$PROJECT_ROOT/.env" | grep -v '^\s*$' | xargs)
+fi
 
 echo "=========================================="
 echo "AeroBook - Complete Environment Setup"
@@ -54,11 +63,14 @@ echo "1. Frontend / App Configuration"
 echo "=========================================="
 echo ""
 
-read -p "Enter your frontend URL [default: https://aerobook.app]: " app_url
-app_url=${app_url:-https://aerobook.app}
+default_app_url="${APP_URL:-https://aerobook.app}"
+default_origins="${ALLOWED_ORIGINS:-$default_app_url}"
 
-read -p "Enter allowed origins (comma-separated) [default: $app_url]: " allowed_origins
-allowed_origins=${allowed_origins:-$app_url}
+read -p "Enter your frontend URL [default: $default_app_url]: " app_url
+app_url=${app_url:-$default_app_url}
+
+read -p "Enter allowed origins (comma-separated) [default: $default_origins]: " allowed_origins
+allowed_origins=${allowed_origins:-$default_origins}
 
 echo ""
 
@@ -85,14 +97,27 @@ echo "=========================================="
 echo "3. Email Configuration (Resend)"
 echo "=========================================="
 echo ""
-echo "Get your API key from: https://resend.com/api-keys"
+
+default_resend_from="${RESEND_FROM:-AeroBook <noreply@aerobook.app>}"
+
+if [ -n "$RESEND_API_KEY" ]; then
+    echo "Found RESEND_API_KEY in .env"
+    read -p "Use existing API key from .env? (y/n) " -n 1 -r
+    echo ""
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        resend_api_key="$RESEND_API_KEY"
+    else
+        echo "Get your API key from: https://resend.com/api-keys"
+        read -p "Enter your Resend API key (starts with re_): " resend_api_key
+    fi
+else
+    echo "Get your API key from: https://resend.com/api-keys"
+    read -p "Enter your Resend API key (starts with re_): " resend_api_key
+fi
 echo ""
 
-read -p "Enter your Resend API key (starts with re_): " resend_api_key
-echo ""
-
-read -p "Enter the 'From' address [default: AeroBook <noreply@aerobook.app>]: " resend_from
-resend_from=${resend_from:-"AeroBook <noreply@aerobook.app>"}
+read -p "Enter the 'From' address [default: $default_resend_from]: " resend_from
+resend_from=${resend_from:-$default_resend_from}
 echo ""
 
 # ==========================================
@@ -130,16 +155,16 @@ echo "Setting Railway environment variables..."
 echo ""
 
 # Frontend / App
-railway variables set APP_URL="$app_url"
-railway variables set ALLOWED_ORIGINS="$allowed_origins"
+railway variable set APP_URL="$app_url"
+railway variable set ALLOWED_ORIGINS="$allowed_origins"
 
 # Security
-railway variables set JWT_SECRET="$jwt_secret"
-railway variables set RESET_TOKEN_SECRET="$reset_token_secret"
+railway variable set JWT_SECRET="$jwt_secret"
+railway variable set RESET_TOKEN_SECRET="$reset_token_secret"
 
 # Email
-railway variables set RESEND_API_KEY="$resend_api_key"
-railway variables set RESEND_FROM="$resend_from"
+railway variable set RESEND_API_KEY="$resend_api_key"
+railway variable set RESEND_FROM="$resend_from"
 
 echo ""
 echo "✓ All environment variables set successfully!"
