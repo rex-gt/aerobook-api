@@ -154,19 +154,19 @@ echo "=========================================="
 echo ""
 
 # Remove old SMTP variables
-railway variables delete SMTP_HOST --yes 2>/dev/null && echo "✓ Removed SMTP_HOST"
-railway variables delete SMTP_PORT --yes 2>/dev/null && echo "✓ Removed SMTP_PORT"
-railway variables delete SMTP_SECURE --yes 2>/dev/null && echo "✓ Removed SMTP_SECURE"
-railway variables delete SMTP_USER --yes 2>/dev/null && echo "✓ Removed SMTP_USER"
-railway variables delete SMTP_PASS --yes 2>/dev/null && echo "✓ Removed SMTP_PASS"
-railway variables delete SMTP_FROM --yes 2>/dev/null && echo "✓ Removed SMTP_FROM"
+yes | railway variable delete SMTP_HOST 2>/dev/null && echo "✓ Removed SMTP_HOST"
+yes | railway variable delete SMTP_PORT 2>/dev/null && echo "✓ Removed SMTP_PORT"
+yes | railway variable delete SMTP_SECURE 2>/dev/null && echo "✓ Removed SMTP_SECURE"
+yes | railway variable delete SMTP_USER 2>/dev/null && echo "✓ Removed SMTP_USER"
+yes | railway variable delete SMTP_PASS 2>/dev/null && echo "✓ Removed SMTP_PASS"
+yes | railway variable delete SMTP_FROM 2>/dev/null && echo "✓ Removed SMTP_FROM"
 
 # Remove old DB_ variables (Railway uses DATABASE_URL)
-railway variables delete DB_HOST --yes 2>/dev/null && echo "✓ Removed DB_HOST"
-railway variables delete DB_PORT --yes 2>/dev/null && echo "✓ Removed DB_PORT"
-railway variables delete DB_USER --yes 2>/dev/null && echo "✓ Removed DB_USER"
-railway variables delete DB_PASSWORD --yes 2>/dev/null && echo "✓ Removed DB_PASSWORD"
-railway variables delete DB_NAME --yes 2>/dev/null && echo "✓ Removed DB_NAME"
+yes | railway variable delete DB_HOST 2>/dev/null && echo "✓ Removed DB_HOST"
+yes | railway variable delete DB_PORT 2>/dev/null && echo "✓ Removed DB_PORT"
+yes | railway variable delete DB_USER 2>/dev/null && echo "✓ Removed DB_USER"
+yes | railway variable delete DB_PASSWORD 2>/dev/null && echo "✓ Removed DB_PASSWORD"
+yes | railway variable delete DB_NAME 2>/dev/null && echo "✓ Removed DB_NAME"
 
 echo ""
 

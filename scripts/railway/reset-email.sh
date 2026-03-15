@@ -32,17 +32,17 @@ echo "Removing Resend variables..."
 echo ""
 
 # Delete variables
-railway variables delete RESEND_API_KEY --yes 2>/dev/null && echo "✓ Deleted RESEND_API_KEY"
-railway variables delete RESEND_FROM --yes 2>/dev/null && echo "✓ Deleted RESEND_FROM"
-railway variables delete APP_URL --yes 2>/dev/null && echo "✓ Deleted APP_URL"
+yes | railway variable delete RESEND_API_KEY 2>/dev/null && echo "✓ Deleted RESEND_API_KEY"
+yes | railway variable delete RESEND_FROM 2>/dev/null && echo "✓ Deleted RESEND_FROM"
+yes | railway variable delete APP_URL 2>/dev/null && echo "✓ Deleted APP_URL"
 
 # Also clean up old SMTP variables if they exist
-railway variables delete SMTP_HOST --yes 2>/dev/null && echo "✓ Deleted SMTP_HOST (legacy)"
-railway variables delete SMTP_PORT --yes 2>/dev/null && echo "✓ Deleted SMTP_PORT (legacy)"
-railway variables delete SMTP_SECURE --yes 2>/dev/null && echo "✓ Deleted SMTP_SECURE (legacy)"
-railway variables delete SMTP_USER --yes 2>/dev/null && echo "✓ Deleted SMTP_USER (legacy)"
-railway variables delete SMTP_PASS --yes 2>/dev/null && echo "✓ Deleted SMTP_PASS (legacy)"
-railway variables delete SMTP_FROM --yes 2>/dev/null && echo "✓ Deleted SMTP_FROM (legacy)"
+yes | railway variable delete SMTP_HOST 2>/dev/null && echo "✓ Deleted SMTP_HOST (legacy)"
+yes | railway variable delete SMTP_PORT 2>/dev/null && echo "✓ Deleted SMTP_PORT (legacy)"
+yes | railway variable delete SMTP_SECURE 2>/dev/null && echo "✓ Deleted SMTP_SECURE (legacy)"
+yes | railway variable delete SMTP_USER 2>/dev/null && echo "✓ Deleted SMTP_USER (legacy)"
+yes | railway variable delete SMTP_PASS 2>/dev/null && echo "✓ Deleted SMTP_PASS (legacy)"
+yes | railway variable delete SMTP_FROM 2>/dev/null && echo "✓ Deleted SMTP_FROM (legacy)"
 
 echo ""
 echo "✓ Email configuration removed"
