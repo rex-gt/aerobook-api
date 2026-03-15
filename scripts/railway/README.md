@@ -22,16 +22,26 @@ Scripts to manage Railway environment variables and deployments from your local 
 
 ## Available Scripts
 
+### Setup Scripts
 | Script | Description |
 |--------|-------------|
-| `setup-full.sh` | Complete environment setup (recommended for new projects) |
-| `setup-app.sh` | Configure frontend URL and CORS settings |
-| `setup-email.sh` | Configure Resend email service |
-| `setup-secrets.sh` | Generate JWT and security secrets |
-| `view-vars.sh` | View all environment variables by category |
-| `test-email.sh` | Test email configuration |
-| `reset-email.sh` | Remove email configuration |
-| `cleanup-legacy-vars.sh` | Remove old/unused variables |
+| `setup-full.sh` | Complete environment setup (app, secrets, email) - **recommended for new projects** |
+| `setup-app.sh` | Configure frontend URL and CORS settings only |
+| `setup-email.sh` | Configure Resend email service only |
+| `setup-secrets.sh` | Generate JWT and security secrets only |
+
+### Utility Scripts
+| Script | Description |
+|--------|-------------|
+| `view-vars.sh` | View all environment variables organized by category |
+| `test-email.sh` | Send a test email to verify configuration |
+
+### Reset Scripts
+| Script | Description |
+|--------|-------------|
+| `reset-email.sh` | Remove Resend email configuration only |
+| `reset-all.sh` | Remove ALL custom variables (start fresh) |
+| `cleanup-legacy-vars.sh` | Remove legacy/unused variables (SMTP, DB_) |
 
 ## Quick Start
 
@@ -196,7 +206,8 @@ scripts/railway/
 ├── setup-secrets.sh        # JWT/security secrets
 ├── view-vars.sh            # View all variables
 ├── test-email.sh           # Test email sending
-├── reset-email.sh          # Remove email configuration
+├── reset-email.sh          # Remove email config only
+├── reset-all.sh            # Remove ALL custom config
 └── cleanup-legacy-vars.sh  # Remove legacy variables
 ```
 
