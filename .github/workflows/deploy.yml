@@ -24,9 +24,11 @@ jobs:
       - name: Run tests
         run: npm test
 
-  deploy:
+  deploy-staging:
     needs: test
+    if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v4
 
@@ -34,13 +36,22 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Staging
-        if: github.ref == 'refs/heads/staging'
         run: railway up --service aerobook-api --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
 
+  deploy-production:
+    needs: test
+    if: github.ref == 'refs/heads/production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
       - name: Deploy to Production
-        if: github.ref == 'refs/heads/production'
         run: railway up --service aerobook-api --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
