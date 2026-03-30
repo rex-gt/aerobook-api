@@ -1,4 +1,6 @@
-require('dotenv').config();
+const path = require('path');
+// Load environment variables for local development
+require('dotenv').config({ path: path.resolve(process.cwd(), '.env.local') });
 
 // Force IPv4 DNS resolution - Railway doesn't support IPv6 outbound
 const dns = require('dns');
