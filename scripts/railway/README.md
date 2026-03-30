@@ -83,9 +83,15 @@ Pushing to specific branches will automatically deploy to the corresponding Rail
 - Push to **`staging`** -> Deploys to Railway **staging** environment.
 - Push to **`production`** -> Deploys to Railway **production** environment.
 
-**Requirement**: You must add a `RAILWAY_TOKEN` to your GitHub Repository Secrets.
-1. Get token from: Railway Dashboard -> Settings -> Tokens.
-2. Add to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret.
+**Requirement**: You must add two Railway tokens to your GitHub Repository Secrets:
+1.  **`RAILWAY_TOKEN_STAGING`**: 
+    -   In Railway Dashboard -> Settings -> Tokens.
+    -   Create a token scoped to the **staging** environment.
+2.  **`RAILWAY_TOKEN_PRODUCTION`**: 
+    -   In Railway Dashboard -> Settings -> Tokens.
+    -   Create a token scoped to the **production** environment.
+
+Add these to GitHub: Settings -> Secrets and variables -> Actions -> New repository secret.
 
 ## Common Commands
 
