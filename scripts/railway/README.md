@@ -26,7 +26,7 @@ AeroBook API uses a 3-tier environment setup:
 
 1. **Local**: Development on your local machine using `.env.local`.
 2. **Staging**: Railway environment for testing (`staging` branch).
-3. **Production**: Railway environment for live users (`production` branch).
+3. **Production**: Railway environment for live users (`main` branch).
 
 ### Configuration Files
 
@@ -81,7 +81,7 @@ npm run railway:deploy -- production
 Pushing to specific branches will automatically deploy to the corresponding Railway environment:
 
 - Push to **`staging`** -> Deploys to Railway **staging** environment.
-- Push to **`production`** -> Deploys to Railway **production** environment.
+- Push to **`main`** -> Deploys to Railway **production** environment.
 
 **Requirement**: You must add two Railway tokens to your GitHub Repository Secrets. **CRITICAL: When creating tokens, select the `aerobook-api` service.**
 

@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - staging
-      - production
+      - main
 
 jobs:
   test:
@@ -42,7 +42,7 @@ jobs:
 
   deploy-production:
     needs: test
-    if: github.ref == 'refs/heads/production'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
