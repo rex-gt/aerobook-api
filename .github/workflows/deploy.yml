@@ -35,9 +35,19 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
+      - name: Verify Token Presence
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "❌ ERROR: RAILWAY_TOKEN is empty. Check GitHub Environment Secrets."
+            exit 1
+          else
+            echo "✅ RAILWAY_TOKEN is present."
+          fi
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+
       - name: Deploy to Staging
-        # Use explicit Service ID and Project ID for more reliable scoping
-        run: railway up --service ff25070e-e565-4f3c-860a-5ccd71ef8d0b --project 4c8f69a6-e256-4e4f-8a8e-d800655556ce --detach
+        run: railway up --service aerobook-api --environment staging --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
 
@@ -52,8 +62,18 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
 
+      - name: Verify Token Presence
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "❌ ERROR: RAILWAY_TOKEN is empty. Check GitHub Environment Secrets."
+            exit 1
+          else
+            echo "✅ RAILWAY_TOKEN is present."
+          fi
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
+
       - name: Deploy to Production
-        # Use explicit Service ID and Project ID for more reliable scoping
-        run: railway up --service ff25070e-e565-4f3c-860a-5ccd71ef8d0b --project 4c8f69a6-e256-4e4f-8a8e-d800655556ce --detach
+        run: railway up --service aerobook-api --environment production --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
