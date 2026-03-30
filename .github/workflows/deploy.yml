@@ -1,0 +1,45 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - staging
+      - production
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm install
+        
+      - name: Run tests
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Staging
+        if: github.ref == 'refs/heads/staging'
+        uses: railwayapp/github-action@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          environment: staging
+
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/production'
+        uses: railwayapp/github-action@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          environment: production
