@@ -71,6 +71,11 @@ const createReservation = async (req, res) => {
     member_id = req.user.id;
   }
 
+  // Ensure start_time is not in the past
+  if (new Date(start_time) < new Date()) {
+    return res.status(400).json({ error: 'Reservations cannot be made in the past' });
+  }
+
   // Check if aircraft is available
   const aircraftCheck = await pool.query('SELECT is_available FROM aircraft WHERE id = $1', [aircraft_id]);
   if (aircraftCheck.rows.length === 0) {
@@ -127,6 +132,11 @@ const updateReservation = async (req, res) => {
     const newAircraftId = aircraft_id || current.aircraft_id;
     const newStartTime = start_time || current.start_time;
     const newEndTime = end_time || current.end_time;
+
+    // Ensure new start_time is not in the past
+    if (new Date(newStartTime) < new Date()) {
+      return res.status(400).json({ error: 'Reservations cannot be moved to the past' });
+    }
 
     // Check if new aircraft is available
     if (aircraft_id) {

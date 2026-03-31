@@ -40,7 +40,7 @@ jest.mock('pg', () => {
 
       // Conflict check
       if (lt.includes('select id from reservations')) {
-        if (params && params[0] === 1 && params[1] === '2026-01-01T10:00:00Z') {
+        if (params && params[0] === 1 && params[1] === '2027-01-01T10:00:00Z') {
           return Promise.resolve({ rows: [{ id: 99 }] });
         }
         return Promise.resolve({ rows: [] });
@@ -158,8 +158,21 @@ describe('Reservations endpoint', () => {
     expect(res.body).toHaveProperty('notes', 'Test reservation');
   });
 
+  test('POST /api/reservations fails for past start_time', async () => {
+    const payload = {
+      member_id: 1,
+      aircraft_id: 3,
+      start_time: '2020-01-01T09:00:00Z',
+      end_time: '2020-01-01T10:00:00Z',
+      notes: 'Past reservation'
+    };
+    const res = await httpRequest(port, '/api/reservations', 'POST', payload, { Authorization: 'Bearer faketoken' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('error', 'Reservations cannot be made in the past');
+  });
+
   test('POST /api/reservations returns 409 on conflict', async () => {
-    const payload = { member_id: 1, aircraft_id: 1, start_time: '2026-01-01T10:00:00Z', end_time: '2026-01-01T11:00:00Z' };
+    const payload = { member_id: 1, aircraft_id: 1, start_time: '2027-01-01T10:00:00Z', end_time: '2027-01-01T11:00:00Z' };
     const res = await httpRequest(port, '/api/reservations', 'POST', payload, { Authorization: 'Bearer faketoken' });
     expect(res.statusCode).toBe(409);
     expect(res.body).toHaveProperty('error');
