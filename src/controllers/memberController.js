@@ -26,7 +26,7 @@ const getMemberById = async (req, res) => {
 };
 
 const createMember = async (req, res) => {
-    const { member_number, first_name, last_name, email, phone, password, role } = req.body;
+    const { member_number, first_name, last_name, email, phone, password, role, skip_welcome_email } = req.body;
 
     // Validate required fields
     if (!first_name || !last_name || !email || !password) {
@@ -53,10 +53,14 @@ const createMember = async (req, res) => {
 
         const newMember = result.rows[0];
 
-        console.log('Attempting to send welcome email to:', newMember.email);
-        sendWelcomeEmail(newMember)
-            .then(() => console.log('Welcome email sent successfully to:', newMember.email))
-            .catch((err) => console.error('Failed to send welcome email:', err.message));
+        if (!skip_welcome_email) {
+            console.log('Attempting to send welcome email to:', newMember.email);
+            sendWelcomeEmail(newMember)
+                .then(() => console.log('Welcome email sent successfully to:', newMember.email))
+                .catch((err) => console.error('Failed to send welcome email:', err.message));
+        } else {
+            console.log('Skipping welcome email for:', newMember.email);
+        }
 
         res.status(201).json({
             id: newMember.id,

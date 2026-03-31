@@ -110,6 +110,16 @@ describe('Members endpoint', () => {
     expect(mailOptions.html).toMatch(/reset-password/i);
   });
 
+  test('POST /api/members does NOT send welcome email if skip_welcome_email is true', async () => {
+    mockSend.mockClear();
+    const payload = { member_number: 'M-102', first_name: 'NoEmail', last_name: 'User', email: 'noemail@example.com', password: 'pass', skip_welcome_email: true };
+    const res = await httpRequest(port, '/api/members', 'POST', payload, { Authorization: 'Bearer faketoken' });
+    expect(res.statusCode).toBe(201);
+    // Allow time for any potential background tasks
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockSend).not.toHaveBeenCalled();
+  });
+
   test('GET /api/members returns list when authorized', async () => {
     const headers = { Authorization: 'Bearer faketoken' };
     const res = await httpRequest(port, '/api/members', 'GET', null, headers);
