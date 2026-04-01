@@ -23,11 +23,18 @@ echo "------------------------------------------"
 DB_URL=""
 
 if [ "$ENVIRONMENT" == "local" ]; then
-    # For local, try to load from .env if it exists, otherwise assume DATABASE_URL is set
-    if [ -f "$PROJECT_ROOT/.env" ]; then
-        # Simple .env parsing for DATABASE_URL
-        DB_URL=$(grep "^DATABASE_URL=" "$PROJECT_ROOT/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
-    fi
+    # List of possible env files
+    ENV_FILES=(".env" ".env.local" ".env.development")
+    
+    for FILE in "${ENV_FILES[@]}"; do
+        if [ -f "$PROJECT_ROOT/$FILE" ]; then
+            DB_URL=$(grep "^DATABASE_URL=" "$PROJECT_ROOT/$FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+            if [ -n "$DB_URL" ]; then
+                echo "✓ Loaded DATABASE_URL from $FILE"
+                break
+            fi
+        fi
+    done
     
     if [ -z "$DB_URL" ]; then
         DB_URL=$DATABASE_URL
