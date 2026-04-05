@@ -119,4 +119,54 @@ const sendReservationConfirmationEmail = async (user, reservation, action = 'cre
     }
 };
 
-module.exports = { sendWelcomeEmail, sendPasswordResetEmail, sendReservationConfirmationEmail };
+const sendReservationReminderEmail = async (user, reservation) => {
+    const appUrl = process.env.APP_URL || 'https://localhost:5173';
+    const startDate = new Date(reservation.start_time);
+    const endDate = new Date(reservation.end_time);
+
+    const formatOptions = {
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short'
+    };
+
+    const startStr = startDate.toLocaleString('en-US', formatOptions);
+    
+    const isMultiDay = startDate.getUTCFullYear() !== endDate.getUTCFullYear() ||
+                       startDate.getUTCMonth() !== endDate.getUTCMonth() ||
+                       startDate.getUTCDate() !== endDate.getUTCDate();
+
+    const endStr = isMultiDay 
+        ? endDate.toLocaleString('en-US', formatOptions)
+        : endDate.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
+
+    console.log(`[EmailService] Sending Reminder Email to: ${user.email}`);
+
+    try {
+        await resend.emails.send({
+            from: process.env.RESEND_FROM || 'AeroBook <noreply@aerobook.app>',
+            to: user.email,
+            subject: `Reminder: Upcoming Reservation for ${reservation.tail_number}`,
+            html: `
+                <h1>Upcoming Flight Reminder</h1>
+                <p>Hello ${user.first_name},</p>
+                <p>This is a reminder of your upcoming reservation for <strong>${reservation.tail_number}</strong>.</p>
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>Start:</strong> ${startStr}</p>
+                    <p><strong>End:</strong> ${endStr}</p>
+                </div>
+                <p>We wish you a safe and pleasant flight!</p>
+                <p>View your reservations at <a href="${appUrl}">AeroBook</a>.</p>
+            `,
+        });
+    } catch (err) {
+        console.error(`[EmailService] Failed to send reminder email: ${err.message}`);
+        throw err;
+    }
+};
+
+module.exports = { 
+    sendWelcomeEmail, 
+    sendPasswordResetEmail, 
+    sendReservationConfirmationEmail,
+    sendReservationReminderEmail 
+};

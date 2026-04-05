@@ -4,6 +4,9 @@ jest.mock('jsonwebtoken');
 describe('Email Service', () => {
   let mockSend;
   let sendWelcomeEmail;
+  let sendPasswordResetEmail;
+  let sendReservationConfirmationEmail;
+  let sendReservationReminderEmail;
   let jwt;
 
   beforeEach(() => {
@@ -34,6 +37,7 @@ describe('Email Service', () => {
     sendWelcomeEmail = emailService.sendWelcomeEmail;
     sendPasswordResetEmail = emailService.sendPasswordResetEmail;
     sendReservationConfirmationEmail = emailService.sendReservationConfirmationEmail;
+    sendReservationReminderEmail = emailService.sendReservationReminderEmail;
   });
 
   test('sendReservationConfirmationEmail should format single-day reservations correctly', async () => {
@@ -73,6 +77,24 @@ describe('Email Service', () => {
     const emailCall = mockSend.mock.calls[0][0];
     expect(emailCall.subject).toBe('Reservation Updated: N54321');
     // Should contain the end date since it's a different day
+    expect(emailCall.html).toContain('Friday, May 1, 2026');
+    expect(emailCall.html).toContain('Sunday, May 3, 2026');
+  });
+
+  test('sendReservationReminderEmail should format multi-day reservations with end date', async () => {
+    const user = { first_name: 'Alice', email: 'alice@example.com' };
+    const reservation = {
+      tail_number: 'N54321',
+      make: 'Piper',
+      model: 'Archer',
+      start_time: '2026-05-01T10:00:00Z',
+      end_time: '2026-05-03T15:00:00Z'
+    };
+
+    await sendReservationReminderEmail(user, reservation);
+
+    const emailCall = mockSend.mock.calls[0][0];
+    expect(emailCall.subject).toContain('Reminder: Upcoming Reservation');
     expect(emailCall.html).toContain('Friday, May 1, 2026');
     expect(emailCall.html).toContain('Sunday, May 3, 2026');
   });
