@@ -18,9 +18,17 @@ dns.lookup = (hostname, options, callback) => {
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const cron = require('node-cron');
 const app = require('./src/app');
+const { processReminders } = require('./src/controllers/reservationsController');
 
 const PORT = process.env.PORT || 3000;
+
+// Schedule reminders check every hour
+cron.schedule('0 * * * *', () => {
+  console.log('[Scheduler] Running reservation reminders job...');
+  processReminders();
+});
 
 if (process.env.SSL_KEY_PATH && process.env.SSL_CERT_PATH) {
   let sslOptions;
