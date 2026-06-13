@@ -47,7 +47,7 @@ const createMember = async (req, res) => {
         const result = await pool.query(
             `INSERT INTO members (member_number, first_name, last_name, email, phone, password, role)
              VALUES ($1, $2, $3, $4, $5, $6, $7)
-             RETURNING id, member_number, first_name, last_name, email, phone, password, role, is_active, created_at`,
+             RETURNING id, member_number, first_name, last_name, email, phone, password, role, is_active, timezone_pref, created_at`,
             [mNumber, first_name, last_name, email, phone || null, hashedPassword, role || 'member']
         );
 
@@ -71,6 +71,7 @@ const createMember = async (req, res) => {
             phone: newMember.phone,
             role: newMember.role,
             is_active: newMember.is_active,
+            timezone_pref: newMember.timezone_pref,
             created_at: newMember.created_at
         });
     } catch (err) {
@@ -93,8 +94,9 @@ const updateMember = async (req, res) => {
     let paramCount = 1;
 
     // Define which fields each role can update
-    const allowedAdminFields = ['first_name', 'last_name', 'email', 'phone', 'is_active', 'role', 'reminder_hours'];
-    const allowedMemberFields = ['first_name', 'last_name', 'email', 'phone', 'reminder_hours'];
+    const allowedAdminFields = ['first_name', 'last_name', 'email', 'phone', 'is_active', 'role', 'reminder_hours', 'timezone_pref'];
+    const allowedMemberFields = ['first_name', 'last_name', 'email', 'phone', 'reminder_hours', 'timezone_pref'];
+
     const allowedFields = req.user.role === 'admin' ? allowedAdminFields : allowedMemberFields;
 
     // Build the update query dynamically

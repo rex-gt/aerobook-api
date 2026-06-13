@@ -114,7 +114,7 @@ const createReservation = async (req, res) => {
   // Send confirmation email (non-blocking)
   const reservation = result.rows[0];
   const aircraftData = await pool.query('SELECT tail_number, make, model FROM aircraft WHERE id = $1', [aircraft_id]);
-  const userData = await pool.query('SELECT first_name, email FROM members WHERE id = $1', [member_id]);
+  const userData = await pool.query('SELECT first_name, email, timezone_pref FROM members WHERE id = $1', [member_id]);
   
   if (userData.rows.length > 0 && aircraftData.rows.length > 0) {
     emailService.sendReservationConfirmationEmail(
@@ -207,7 +207,7 @@ const updateReservation = async (req, res) => {
   // Send update email (non-blocking)
   const reservation = result.rows[0];
   const aircraftData = await pool.query('SELECT tail_number, make, model FROM aircraft WHERE id = $1', [reservation.aircraft_id]);
-  const userData = await pool.query('SELECT first_name, email FROM members WHERE id = $1', [reservation.member_id]);
+  const userData = await pool.query('SELECT first_name, email, timezone_pref FROM members WHERE id = $1', [reservation.member_id]);
   
   if (userData.rows.length > 0 && aircraftData.rows.length > 0) {
     emailService.sendReservationConfirmationEmail(
@@ -244,7 +244,7 @@ const deleteReservation = async (req, res) => {
   // Send cancellation email (non-blocking)
   const reservation = result.rows[0];
   const aircraftData = await pool.query('SELECT tail_number, make, model FROM aircraft WHERE id = $1', [reservation.aircraft_id]);
-  const userData = await pool.query('SELECT first_name, email FROM members WHERE id = $1', [reservation.member_id]);
+  const userData = await pool.query('SELECT first_name, email, timezone_pref FROM members WHERE id = $1', [reservation.member_id]);
   
   if (userData.rows.length > 0 && aircraftData.rows.length > 0) {
     emailService.sendReservationConfirmationEmail(
@@ -263,7 +263,7 @@ const processReminders = async () => {
     // 1. Have not had a reminder sent
     // 2. Start between NOW and NOW + reminder_hours
     const result = await pool.query(`
-      SELECT r.*, m.first_name, m.email, m.reminder_hours, a.tail_number, a.make, a.model
+      SELECT r.*, m.first_name, m.email, m.reminder_hours, m.timezone_pref, a.tail_number, a.make, a.model
       FROM reservations r
       JOIN members m ON r.member_id = m.id
       JOIN aircraft a ON r.aircraft_id = a.id
@@ -276,7 +276,7 @@ const processReminders = async () => {
     for (const row of result.rows) {
       console.log(`Sending reminder to ${row.email} for reservation ${row.id}`);
       await emailService.sendReservationReminderEmail(
-        { first_name: row.first_name, email: row.email },
+        { first_name: row.first_name, email: row.email, timezone_pref: row.timezone_pref },
         row
       );
       await pool.query('UPDATE reservations SET reminder_sent = true WHERE id = $1', [row.id]);

@@ -70,7 +70,7 @@ aerobook-api/
 - **Protected Endpoints**: All API endpoints require authentication and role authorization
 - **Welcome Email Service**: Automated welcome emails with password reset links for new members
 - **Password Reset Flow**: Complete token-based password reset via email links
-- **User Profile Management**: Update profile information, change password with verification
+- **User Profile Management**: Update profile information, configure timezone preference (UTC or browser-resolved local time) for scheduling displays and emails, change password with verification
 - **Comprehensive Testing**: 126 unit tests across 10 test suites plus 29 live server integration tests
 - **Clean Architecture**: Modular design with separation of concerns
 
@@ -104,7 +104,7 @@ The project follows a clean, modular architecture with proper separation of conc
 
 ### Tables
 
-1. **members** - Club member information, authentication, and roles (`admin` | `operator` | `member`)
+1. **members** - Club member information, authentication, roles (`admin` | `operator` | `member`), and display timezone preference (`timezone_pref`)
 2. **aircraft** - Fleet aircraft details, tach hours, and availability
 3. **reservations** - Scheduled bookings with conflict detection; statuses: `scheduled`, `in_progress`, `completed`, `cancelled`
 4. **flight_logs** - Actual flight records; `tach_hours` is a computed column (`tach_end - tach_start`)
@@ -497,6 +497,7 @@ curl -X PUT http://localhost:3000/api/users/profile \
 - `last_name` (required): User's last name
 - `email` (required): User's email address
 - `phone` (optional): User's phone number
+- `timezone_pref` (optional): Display timezone preference ('local', 'UTC', or specific IANA string)
 - `current_password` (conditional): Required when changing password
 - `new_password` (optional): New password (requires current_password)
 
@@ -513,6 +514,7 @@ curl -X PUT http://localhost:3000/api/users/profile \
     "phone": "555-1234",
     "role": "member",
     "is_active": true,
+    "timezone_pref": "local",
     "created_at": "2024-03-01T10:00:00Z"
   }
 }
