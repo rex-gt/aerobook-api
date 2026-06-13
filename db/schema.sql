@@ -12,6 +12,7 @@ CREATE TABLE members (
     role VARCHAR(20) DEFAULT 'member' CHECK (role IN ('admin', 'operator', 'member')),
     is_active BOOLEAN DEFAULT true,
     reminder_hours INTEGER DEFAULT 24,
+    timezone_pref VARCHAR(50) DEFAULT 'local',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -39,7 +39,7 @@ const getProfile = async (req, res) => {
         const userId = req.user && req.user.id;
         if (!userId) return res.status(401).json({ message: 'Not authorized' });
 
-        const result = await pool.query('SELECT id, member_number, first_name, last_name, email, phone, role, is_active, reminder_hours, created_at FROM members WHERE id = $1', [userId]);
+        const result = await pool.query('SELECT id, member_number, first_name, last_name, email, phone, role, is_active, reminder_hours, timezone_pref, created_at FROM members WHERE id = $1', [userId]);
         const user = result.rows[0];
         if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -55,7 +55,7 @@ const updateProfile = async (req, res) => {
         const userId = req.user && req.user.id;
         if (!userId) return res.status(401).json({ message: 'Not authorized' });
 
-        const { first_name, last_name, email, phone, current_password, new_password, reminder_hours } = req.body;
+        const { first_name, last_name, email, phone, current_password, new_password, reminder_hours, timezone_pref } = req.body;
 
         // Validate required fields
         if (!first_name || !last_name || !email) {
@@ -101,6 +101,11 @@ const updateProfile = async (req, res) => {
             params.push(reminder_hours);
         }
 
+        if (timezone_pref !== undefined) {
+            updateFields.push(`timezone_pref = $${params.length + 1}`);
+            params.push(timezone_pref);
+        }
+
         if (hashedPassword) {
             updateFields.push(`password = $${params.length + 1}`);
             params.push(hashedPassword);
@@ -113,7 +118,7 @@ const updateProfile = async (req, res) => {
             UPDATE members
             SET ${updateFields.join(', ')}
             WHERE id = $${userIndex}
-            RETURNING id, member_number, first_name, last_name, email, phone, role, is_active, reminder_hours, created_at
+            RETURNING id, member_number, first_name, last_name, email, phone, role, is_active, reminder_hours, timezone_pref, created_at
         `;
 
         const result = await pool.query(query, params);

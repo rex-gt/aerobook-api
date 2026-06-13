@@ -326,7 +326,12 @@ describe('Role-based access control', () => {
   test('Member can update their own reservation', async () => {
     mockUserRole = 'member';
     mockUserId = 1;
-    const payload = { start_time: '2026-06-01T09:00:00Z', end_time: '2026-06-01T10:00:00Z', status: 'scheduled', notes: 'Mine' };
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const startStr = futureDate.toISOString();
+    futureDate.setHours(futureDate.getHours() + 1);
+    const endStr = futureDate.toISOString();
+    const payload = { start_time: startStr, end_time: endStr, status: 'scheduled', notes: 'Mine' };
     const res = await httpRequest(port, '/api/reservations/1', 'PUT', payload, { Authorization: 'Bearer faketoken' });
     expect(res.statusCode).toBe(200);
   });
@@ -334,7 +339,12 @@ describe('Role-based access control', () => {
   test('Member cannot update another member reservation (403)', async () => {
     mockUserRole = 'member';
     mockUserId = 1;
-    const payload = { start_time: '2026-06-01T09:00:00Z', end_time: '2026-06-01T10:00:00Z', status: 'scheduled', notes: 'Hack' };
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const startStr = futureDate.toISOString();
+    futureDate.setHours(futureDate.getHours() + 1);
+    const endStr = futureDate.toISOString();
+    const payload = { start_time: startStr, end_time: endStr, status: 'scheduled', notes: 'Hack' };
     const res = await httpRequest(port, '/api/reservations/99', 'PUT', payload, { Authorization: 'Bearer faketoken' });
     expect(res.statusCode).toBe(403);
   });
@@ -342,7 +352,12 @@ describe('Role-based access control', () => {
   test('Operator can update any reservation (maintenance override)', async () => {
     mockUserRole = 'operator';
     mockUserId = 2;
-    const payload = { start_time: '2026-06-01T09:00:00Z', end_time: '2026-06-01T10:00:00Z', status: 'cancelled', notes: 'Maintenance override' };
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const startStr = futureDate.toISOString();
+    futureDate.setHours(futureDate.getHours() + 1);
+    const endStr = futureDate.toISOString();
+    const payload = { start_time: startStr, end_time: endStr, status: 'cancelled', notes: 'Maintenance override' };
     const res = await httpRequest(port, '/api/reservations/1', 'PUT', payload, { Authorization: 'Bearer faketoken' });
     expect(res.statusCode).toBe(200);
   });

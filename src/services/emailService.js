@@ -68,6 +68,25 @@ const sendPasswordResetEmail = async (user) => {
         throw err;
     }
 };
+const getRecipientTimezone = (user) => {
+    let tz = 'UTC';
+    if (user && user.timezone_pref) {
+        if (user.timezone_pref === 'UTC') {
+            tz = 'UTC';
+        } else if (user.timezone_pref === 'local') {
+            tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+        } else {
+            try {
+                new Intl.DateTimeFormat('en-US', { timeZone: user.timezone_pref });
+                tz = user.timezone_pref;
+            } catch (e) {
+                console.error(`[EmailService] Invalid timezone: ${user.timezone_pref}, falling back to UTC`);
+                tz = 'UTC';
+            }
+        }
+    }
+    return tz;
+};
 
 const sendReservationConfirmationEmail = async (user, reservation, action = 'created') => {
     const appUrl = process.env.APP_URL || 'https://localhost:5173';
@@ -77,21 +96,22 @@ const sendReservationConfirmationEmail = async (user, reservation, action = 'cre
     const startDate = new Date(reservation.start_time);
     const endDate = new Date(reservation.end_time);
 
+    const tz = getRecipientTimezone(user);
+
     const formatOptions = {
         weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-        hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short'
+        hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short'
     };
 
     const startStr = startDate.toLocaleString('en-US', formatOptions);
     
-    // Check if it ends on a different day
-    const isMultiDay = startDate.getUTCFullYear() !== endDate.getUTCFullYear() ||
-                       startDate.getUTCMonth() !== endDate.getUTCMonth() ||
-                       startDate.getUTCDate() !== endDate.getUTCDate();
+    // Check if it ends on a different day in the preferred timezone
+    const dateOptions = { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: tz };
+    const isMultiDay = startDate.toLocaleDateString('en-US', dateOptions) !== endDate.toLocaleDateString('en-US', dateOptions);
 
     const endStr = isMultiDay 
         ? endDate.toLocaleString('en-US', formatOptions)
-        : endDate.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
+        : endDate.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' });
 
     console.log(`[EmailService] Sending Reservation ${actionText} Email to: ${user.email}`);
     console.log(`[EmailService] Subject: ${subject}`);
@@ -124,20 +144,22 @@ const sendReservationReminderEmail = async (user, reservation) => {
     const startDate = new Date(reservation.start_time);
     const endDate = new Date(reservation.end_time);
 
+    const tz = getRecipientTimezone(user);
+
     const formatOptions = {
         weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-        hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short'
+        hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short'
     };
 
     const startStr = startDate.toLocaleString('en-US', formatOptions);
     
-    const isMultiDay = startDate.getUTCFullYear() !== endDate.getUTCFullYear() ||
-                       startDate.getUTCMonth() !== endDate.getUTCMonth() ||
-                       startDate.getUTCDate() !== endDate.getUTCDate();
+    // Check if it ends on a different day in the preferred timezone
+    const dateOptions = { year: 'numeric', month: 'numeric', day: 'numeric', timeZone: tz };
+    const isMultiDay = startDate.toLocaleDateString('en-US', dateOptions) !== endDate.toLocaleDateString('en-US', dateOptions);
 
     const endStr = isMultiDay 
         ? endDate.toLocaleString('en-US', formatOptions)
-        : endDate.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'UTC', timeZoneName: 'short' });
+        : endDate.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' });
 
     console.log(`[EmailService] Sending Reminder Email to: ${user.email}`);
 
@@ -163,7 +185,6 @@ const sendReservationReminderEmail = async (user, reservation) => {
         throw err;
     }
 };
-
 module.exports = { 
     sendWelcomeEmail, 
     sendPasswordResetEmail, 

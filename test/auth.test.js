@@ -45,7 +45,7 @@ jest.mock('pg', () => {
         return Promise.resolve({ rows: [{ id: 10, member_number: params[0], first_name: params[1], last_name: params[2], email: params[3], role: params[6] || 'member' }] });
       }
       if (lt.includes('select id, member_number') && lt.includes('where id = $1')) {
-        return Promise.resolve({ rows: [{ id: 1, member_number: 'M-1', first_name: 'Auth', last_name: 'User', email: 'auth@example.com', role: 'admin', is_active: true }] });
+        return Promise.resolve({ rows: [{ id: 1, member_number: 'M-1', first_name: 'Auth', last_name: 'User', email: 'auth@example.com', role: 'admin', is_active: true, timezone_pref: 'local' }] });
       }
       if (lt.includes('select id from members where id')) {
         return Promise.resolve({ rows: [{ id: 1 }] });
@@ -54,7 +54,7 @@ jest.mock('pg', () => {
         return Promise.resolve({ rows: [{ password: '$2a$10$N9qo8uLOickgx2ZMRZoMye' }] });
       }
       if (lt.includes('update members') && lt.includes('set')) {
-        return Promise.resolve({ rows: [{ id: 1, member_number: 'M-1', first_name: 'Updated', last_name: 'User', email: 'updated@example.com', role: 'admin', is_active: true }] });
+        return Promise.resolve({ rows: [{ id: 1, member_number: 'M-1', first_name: 'Updated', last_name: 'User', email: 'updated@example.com', role: 'admin', is_active: true, timezone_pref: 'UTC' }] });
       }
       return Promise.resolve({ rows: [] });
     }
@@ -163,6 +163,19 @@ describe('Auth endpoints', () => {
     expect(res.statusCode).toBe(200);
     expect(res.body).toHaveProperty('message', 'Profile updated successfully');
     expect(res.body).toHaveProperty('user');
+  });
+
+  test('PUT /api/users/profile updates user timezone preference', async () => {
+    const payload = {
+      first_name: 'Auth',
+      last_name: 'User',
+      email: 'auth@example.com',
+      timezone_pref: 'UTC'
+    };
+    const res = await httpRequest(port, '/api/users/profile', 'PUT', payload, { Authorization: 'Bearer valid-token' });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Profile updated successfully');
+    expect(res.body.user).toHaveProperty('timezone_pref', 'UTC');
   });
 
   test('PUT /api/users/profile fails without authentication', async () => {

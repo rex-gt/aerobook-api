@@ -198,9 +198,14 @@ describe('Reservations endpoint', () => {
   });
 
   test('PUT /api/reservations/:id updates a reservation', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const startStr = futureDate.toISOString();
+    futureDate.setHours(futureDate.getHours() + 1);
+    const endStr = futureDate.toISOString();
     const payload = {
-      start_time: '2026-05-01T09:00:00Z',
-      end_time: '2026-05-01T10:00:00Z',
+      start_time: startStr,
+      end_time: endStr,
       status: 'booked',
       notes: 'Updated reservation'
     };
@@ -211,9 +216,14 @@ describe('Reservations endpoint', () => {
   });
 
   test('PUT /api/reservations/:id returns 404 if not found', async () => {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 5);
+    const startStr = futureDate.toISOString();
+    futureDate.setHours(futureDate.getHours() + 1);
+    const endStr = futureDate.toISOString();
     const payload = {
-      start_time: '2026-05-01T09:00:00Z',
-      end_time: '2026-05-01T10:00:00Z',
+      start_time: startStr,
+      end_time: endStr,
       status: 'booked',
       notes: 'Updated reservation'
     };
